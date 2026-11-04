@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -26,10 +27,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Product
+import com.example.myapplication.model.ProductModifier
+import com.example.myapplication.model.ProductVariant
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleRed
 import com.example.myapplication.viewmodel.PosViewModel
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +83,8 @@ fun InventoryScreen(viewModel: PosViewModel) {
             ) {
                 Text(
                     text = "Control de Inventario",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
                 FilterChip(
                     selected = showOnlyLowStock,
@@ -142,9 +147,9 @@ fun InventoryScreen(viewModel: PosViewModel) {
             product = productToEdit,
             categories = categories.filter { it != "Todos" },
             onDismiss = { showProductSheet = false },
-            onSave = { name, price, category, stock, colorHex, barcode ->
+            onSave = { name, price, category, stock, colorHex, barcode, variants, modifiers ->
                 if (productToEdit == null) {
-                    viewModel.addProduct(name, price, category, stock, colorHex, barcode)
+                    viewModel.addProduct(name, price, category, stock, colorHex, barcode, variants, modifiers)
                 } else {
                     val updated = productToEdit!!.copy(
                         name = name,
@@ -152,7 +157,9 @@ fun InventoryScreen(viewModel: PosViewModel) {
                         category = category,
                         stock = stock,
                         colorHex = colorHex,
-                        barcode = barcode
+                        barcode = barcode,
+                        variants = variants,
+                        modifiers = modifiers
                     )
                     viewModel.updateProduct(updated)
                 }
@@ -211,7 +218,7 @@ fun InventoryCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "${product.category} • $${String.format("%.2f", product.price)}${if (product.barcode != null) " • " + product.barcode else ""}",
+                    text = "${product.category} • $${String.format("%.2f", product.price)}${if (product.variants.isNotEmpty()) " • ${product.variants.size} variantes" else ""}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -260,13 +267,22 @@ fun AddEditProductSheet(
     product: Product?,
     categories: List<String>,
     onDismiss: () -> Unit,
-    onSave: (name: String, price: Double, category: String, stock: Int, colorHex: Long, barcode: String?) -> Unit
+    onSave: (name: String, price: Double, category: String, stock: Int, colorHex: Long, barcode: String?, variants: List<ProductVariant>, modifiers: List<ProductModifier>) -> Unit
 ) {
     var name by remember { mutableStateOf(product?.name ?: "") }
     var priceText by remember { mutableStateOf(product?.price?.toString() ?: "") }
     var stockText by remember { mutableStateOf(product?.stock?.toString() ?: "") }
     var barcodeText by remember { mutableStateOf(product?.barcode ?: "") }
     var selectedCategory by remember { mutableStateOf(product?.category ?: categories.firstOrNull() ?: "General") }
+
+    val variantsList = remember { mutableStateListOf<ProductVariant>().apply { addAll(product?.variants ?: emptyList()) } }
+    val modifiersList = remember { mutableStateListOf<ProductModifier>().apply { addAll(product?.modifiers ?: emptyList()) } }
+
+    var newVariantName by remember { mutableStateOf("") }
+    var newVariantPrice by remember { mutableStateOf("") }
+
+    var newModifierName by remember { mutableStateOf("") }
+    var newModifierPrice by remember { mutableStateOf("") }
 
     var showCameraScanner by remember { mutableStateOf(false) }
 
@@ -321,7 +337,7 @@ fun AddEditProductSheet(
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = { priceText = it },
-                    label = { Text("Precio ($)") },
+                    label = { Text("Precio Base ($)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -361,6 +377,92 @@ fun AddEditProductSheet(
                 }
             }
 
+            // Sección Variantes (Tamaños)
+            Text("Variantes / Tamaños (Opcional)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = newVariantName,
+                    onValueChange = { newVariantName = it },
+                    label = { Text("Ej. Grande") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = newVariantPrice,
+                    onValueChange = { newVariantPrice = it },
+                    label = { Text("Precio ($)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                IconButton(onClick = {
+                    val p = newVariantPrice.toDoubleOrNull()
+                    if (newVariantName.isNotBlank() && p != null) {
+                        variantsList.add(ProductVariant(UUID.randomUUID().toString(), newVariantName.trim(), p))
+                        newVariantName = ""
+                        newVariantPrice = ""
+                    }
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Variante")
+                }
+            }
+
+            if (variantsList.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(variantsList) { v ->
+                        InputChip(
+                            selected = true,
+                            onClick = { variantsList.remove(v) },
+                            label = { Text("${v.name} (\$${v.price})") },
+                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Remover") }
+                        )
+                    }
+                }
+            }
+
+            // Sección Modificadores (Extras)
+            Text("Modificadores / Extras (Opcional)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = newModifierName,
+                    onValueChange = { newModifierName = it },
+                    label = { Text("Ej. Extra Queso") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = newModifierPrice,
+                    onValueChange = { newModifierPrice = it },
+                    label = { Text("Costo (+$)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                IconButton(onClick = {
+                    val p = newModifierPrice.toDoubleOrNull() ?: 0.0
+                    if (newModifierName.isNotBlank()) {
+                        modifiersList.add(ProductModifier(UUID.randomUUID().toString(), newModifierName.trim(), p))
+                        newModifierName = ""
+                        newModifierPrice = ""
+                    }
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Extra")
+                }
+            }
+
+            if (modifiersList.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(modifiersList) { m ->
+                        InputChip(
+                            selected = true,
+                            onClick = { modifiersList.remove(m) },
+                            label = { Text("${m.name} (+\$${m.price})") },
+                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Remover") }
+                        )
+                    }
+                }
+            }
+
             Text("Color de Etiqueta", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 colorOptions.forEach { colorHex ->
@@ -393,7 +495,7 @@ fun AddEditProductSheet(
                         price == null || price <= 0 -> errorMessage = "Ingresa un precio válido mayor a 0"
                         stock == null || stock < 0 -> errorMessage = "Ingresa un stock válido mayor o igual a 0"
                         else -> {
-                            onSave(name.trim(), price, selectedCategory, stock, selectedColorHex, barcodeText.trim().ifEmpty { null })
+                            onSave(name.trim(), price, selectedCategory, stock, selectedColorHex, barcodeText.trim().ifEmpty { null }, variantsList.toList(), modifiersList.toList())
                         }
                     }
                 }

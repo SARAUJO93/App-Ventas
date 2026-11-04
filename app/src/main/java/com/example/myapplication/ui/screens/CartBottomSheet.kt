@@ -44,6 +44,7 @@ fun CartBottomSheet(
     if (completedOrder != null) {
         TicketReceiptModal(
             order = completedOrder!!,
+            viewModel = viewModel,
             onDismiss = {
                 completedOrder = null
                 onDismiss()
@@ -177,7 +178,13 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = item.product.name, fontWeight = FontWeight.SemiBold)
-            Text(text = "\$${String.format(Locale.getDefault(), "%.2f", item.product.price)} c/u", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            if (item.selectedVariant != null || item.selectedModifiers.isNotEmpty()) {
+                val variantText = item.selectedVariant?.name ?: ""
+                val modifiersText = item.selectedModifiers.joinToString(", ") { it.name }
+                val detailsText = listOf(variantText, modifiersText).filter { it.isNotEmpty() }.joinToString(" • ")
+                Text(text = detailsText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Text(text = "\$${String.format(Locale.getDefault(), "%.2f", item.unitPrice)} c/u", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
 
         Row(

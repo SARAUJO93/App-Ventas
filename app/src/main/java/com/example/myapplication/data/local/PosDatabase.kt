@@ -15,7 +15,7 @@ import androidx.room.RoomDatabase
         EmployeeEntity::class,
         TransactionEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {

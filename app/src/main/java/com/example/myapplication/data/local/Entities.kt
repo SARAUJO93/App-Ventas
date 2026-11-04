@@ -4,8 +4,12 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.myapplication.model.Customer
 import com.example.myapplication.model.Product
+import com.example.myapplication.model.ProductModifier
+import com.example.myapplication.model.ProductVariant
 import com.example.myapplication.model.Table
 import com.example.myapplication.model.TableStatus
+import org.json.JSONArray
+import org.json.JSONObject
 
 @Entity(tableName = "products")
 data class ProductEntity(
@@ -15,11 +19,102 @@ data class ProductEntity(
     val category: String,
     val stock: Int,
     val colorHex: Long,
-    val barcode: String? = null
+    val barcode: String? = null,
+    val variantsJson: String? = null,
+    val modifiersJson: String? = null
 )
 
-fun ProductEntity.toDomain() = Product(id, name, price, category, stock, colorHex, barcode)
-fun Product.toEntity() = ProductEntity(id, name, price, category, stock, colorHex, barcode)
+fun parseVariants(json: String?): List<ProductVariant> {
+    if (json.isNullOrBlank()) return emptyList()
+    return try {
+        val array = JSONArray(json)
+        val list = mutableListOf<ProductVariant>()
+        for (i in 0 until array.length()) {
+            val obj = array.getJSONObject(i)
+            list.add(
+                ProductVariant(
+                    id = obj.getString("id"),
+                    name = obj.getString("name"),
+                    price = obj.getDouble("price")
+                )
+            )
+        }
+        list
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+
+fun List<ProductVariant>.variantsToJson(): String? {
+    if (isEmpty()) return null
+    val array = JSONArray()
+    forEach { v ->
+        val obj = JSONObject()
+        obj.put("id", v.id)
+        obj.put("name", v.name)
+        obj.put("price", v.price)
+        array.put(obj)
+    }
+    return array.toString()
+}
+
+fun parseModifiers(json: String?): List<ProductModifier> {
+    if (json.isNullOrBlank()) return emptyList()
+    return try {
+        val array = JSONArray(json)
+        val list = mutableListOf<ProductModifier>()
+        for (i in 0 until array.length()) {
+            val obj = array.getJSONObject(i)
+            list.add(
+                ProductModifier(
+                    id = obj.getString("id"),
+                    name = obj.getString("name"),
+                    price = obj.getDouble("price")
+                )
+            )
+        }
+        list
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+
+fun List<ProductModifier>.modifiersToJson(): String? {
+    if (isEmpty()) return null
+    val array = JSONArray()
+    forEach { m ->
+        val obj = JSONObject()
+        obj.put("id", m.id)
+        obj.put("name", m.name)
+        obj.put("price", m.price)
+        array.put(obj)
+    }
+    return array.toString()
+}
+
+fun ProductEntity.toDomain() = Product(
+    id = id,
+    name = name,
+    price = price,
+    category = category,
+    stock = stock,
+    colorHex = colorHex,
+    barcode = barcode,
+    variants = parseVariants(variantsJson),
+    modifiers = parseModifiers(modifiersJson)
+)
+
+fun Product.toEntity() = ProductEntity(
+    id = id,
+    name = name,
+    price = price,
+    category = category,
+    stock = stock,
+    colorHex = colorHex,
+    barcode = barcode,
+    variantsJson = variants.variantsToJson(),
+    modifiersJson = modifiers.modifiersToJson()
+)
 
 @Entity(tableName = "tables")
 data class TableEntity(

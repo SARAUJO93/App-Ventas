@@ -186,13 +186,28 @@ class PosViewModel @Inject constructor(
         }
     }
 
-    fun addToCart(product: Product) {
+    fun addToCart(
+        product: Product,
+        selectedVariant: ProductVariant? = null,
+        selectedModifiers: List<ProductModifier> = emptyList()
+    ) {
         _cartItems.update { current ->
-            val existing = current.find { it.product.id == product.id }
-            if (existing != null) {
-                current.map { if (it.product.id == product.id) it.copy(quantity = it.quantity + 1) else it }
+            val existingIndex = current.indexOfFirst {
+                it.product.id == product.id &&
+                        it.selectedVariant?.id == selectedVariant?.id &&
+                        it.selectedModifiers == selectedModifiers
+            }
+            if (existingIndex != -1) {
+                current.mapIndexed { index, item ->
+                    if (index == existingIndex) item.copy(quantity = item.quantity + 1) else item
+                }
             } else {
-                current + CartItem(product, 1)
+                current + CartItem(
+                    product = product,
+                    quantity = 1,
+                    selectedVariant = selectedVariant,
+                    selectedModifiers = selectedModifiers
+                )
             }
         }
     }
@@ -214,7 +229,16 @@ class PosViewModel @Inject constructor(
         activeCheckoutTableId = null
     }
 
-    fun addProduct(name: String, price: Double, category: String, stock: Int, colorHex: Long, barcode: String? = null) {
+    fun addProduct(
+        name: String,
+        price: Double,
+        category: String,
+        stock: Int,
+        colorHex: Long,
+        barcode: String? = null,
+        variants: List<ProductVariant> = emptyList(),
+        modifiers: List<ProductModifier> = emptyList()
+    ) {
         viewModelScope.launch {
             val newProduct = Product(
                 id = UUID.randomUUID().toString(),
@@ -223,7 +247,9 @@ class PosViewModel @Inject constructor(
                 category = category,
                 stock = stock,
                 colorHex = colorHex,
-                barcode = barcode
+                barcode = barcode,
+                variants = variants,
+                modifiers = modifiers
             )
             repository.addProduct(newProduct)
         }

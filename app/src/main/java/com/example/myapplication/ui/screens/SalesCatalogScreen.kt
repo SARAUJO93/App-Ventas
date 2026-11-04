@@ -38,6 +38,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
 
     var showCartSheet by remember { mutableStateOf(false) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
+    var selectedProductForVariants by remember { mutableStateOf<Product?>(null) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
@@ -113,10 +114,30 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(filteredProducts) { product ->
-                    ProductCard(product = product, onClick = { viewModel.addToCart(product) })
+                    ProductCard(
+                        product = product,
+                        onClick = {
+                            if (product.variants.isNotEmpty() || product.modifiers.isNotEmpty()) {
+                                selectedProductForVariants = product
+                            } else {
+                                viewModel.addToCart(product)
+                            }
+                        }
+                    )
                 }
             }
         }
+    }
+
+    if (selectedProductForVariants != null) {
+        SelectVariantModal(
+            product = selectedProductForVariants!!,
+            onDismiss = { selectedProductForVariants = null },
+            onConfirm = { variant, modifiers ->
+                viewModel.addToCart(selectedProductForVariants!!, variant, modifiers)
+                selectedProductForVariants = null
+            }
+        )
     }
 
     if (showBarcodeScanner) {
@@ -179,7 +200,7 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                     maxLines = 1
                 )
                 Text(
-                    text = "\$${String.format(Locale.getDefault(), "%.2f", product.price)}",
+                    text = "\$${String.format(Locale.getDefault(), "%.2f", product.price)}${if (product.variants.isNotEmpty()) " +" else ""}",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
