@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screens
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory
@@ -11,6 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.viewmodel.PosViewModel
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -23,6 +30,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 @Composable
 fun PosHomeScreen() {
     val viewModel: PosViewModel = viewModel()
+    val navController = rememberNavController()
 
     val items = listOf(
         Screen.Sales,
@@ -31,19 +39,28 @@ fun PosHomeScreen() {
         Screen.Inventory
     )
 
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.Sales) }
-
     Scaffold(
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
                 items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.label) },
                         label = { Text(screen.label) },
-                        selected = currentScreen == screen,
-                        onClick = { currentScreen = screen },
+                        selected = currentRoute == screen.route,
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -54,17 +71,15 @@ fun PosHomeScreen() {
             }
         }
     ) { innerPadding ->
-        Modifier.padding(innerPadding).let { _ ->
-            when (currentScreen) {
-                Screen.Sales -> SalesCatalogScreen(viewModel)
-                Screen.Tables -> TablesScreen(viewModel)
-                Screen.Customers -> CustomersScreen(viewModel)
-                Screen.Inventory -> {
-                    // Placeholder para inventario para mantener el archivo más limpio,
-                    // ya que es similar a Catálogo pero con edición.
-                    Text("Módulo de Inventario en construcción", modifier = Modifier.padding(innerPadding))
-                }
-            }
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Sales.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Screen.Sales.route) { SalesCatalogScreen(viewModel) }
+            composable(Screen.Tables.route) { TablesScreen(viewModel) }
+            composable(Screen.Customers.route) { CustomersScreen(viewModel) }
+            composable(Screen.Inventory.route) { InventoryScreen(viewModel) }
         }
     }
 }

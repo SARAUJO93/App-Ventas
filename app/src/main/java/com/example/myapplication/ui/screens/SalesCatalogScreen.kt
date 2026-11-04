@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -21,6 +20,7 @@ import com.example.myapplication.model.Product
 import com.example.myapplication.ui.components.AppleSegmentedControl
 import com.example.myapplication.viewmodel.PosViewModel
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +49,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito") },
                     text = {
                         Text(
-                            "${cartItems.sumOf { it.quantity }} items • \$${String.format("%.2f", viewModel.cartTotal)}",
+                            text = "${cartItems.sumOf { it.quantity }} items • \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -137,7 +137,7 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                     maxLines = 1
                 )
                 Text(
-                    text = "\$${String.format("%.2f", product.price)}",
+                    text = "\$${String.format(Locale.getDefault(), "%.2f", product.price)}",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )

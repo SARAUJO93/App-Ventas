@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Table
@@ -22,6 +21,7 @@ import com.example.myapplication.viewmodel.PosViewModel
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleRed
 import com.example.myapplication.ui.theme.AppleOrange
+import java.util.Locale
 
 @Composable
 fun TablesScreen(viewModel: PosViewModel) {
@@ -89,7 +89,7 @@ fun TableCard(table: Table) {
             Column {
                 if (table.status != TableStatus.AVAILABLE) {
                     Text(
-                        text = "Total: \$${String.format("%.2f", table.currentOrderTotal)}",
+                        text = "Total: \$${String.format(Locale.getDefault(), "%.2f", table.currentOrderTotal)}",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )

@@ -18,9 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.CartItem
+import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.viewmodel.PosViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +33,18 @@ fun CartBottomSheet(
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
     var showCheckout by remember { mutableStateOf(false) }
+    var completedOrder by remember { mutableStateOf<Order?>(null) }
+
+    if (completedOrder != null) {
+        TicketReceiptModal(
+            order = completedOrder!!,
+            onDismiss = {
+                completedOrder = null
+                onDismiss()
+            }
+        )
+        return
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -42,8 +56,8 @@ fun CartBottomSheet(
             CheckoutView(
                 viewModel = viewModel,
                 onBack = { showCheckout = false },
-                onComplete = {
-                    onDismiss()
+                onComplete = { order ->
+                    completedOrder = order
                 }
             )
         } else {
@@ -74,28 +88,28 @@ fun CartBottomSheet(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Divider()
+                HorizontalDivider()
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Subtotal", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("\$${String.format("%.2f", viewModel.cartSubtotal)}")
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartSubtotal)}")
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("IVA (16%)", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("\$${String.format("%.2f", viewModel.cartTax)}")
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTax)}")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total", style = MaterialTheme.typography.titleMedium)
-                    Text("\$${String.format("%.2f", viewModel.cartTotal)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 AppleButton(
-                    text = "Cobrar \$${String.format("%.2f", viewModel.cartTotal)}",
+                    text = "Cobrar \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
                     onClick = { showCheckout = true }
                 )
 
@@ -113,7 +127,7 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = item.product.name, fontWeight = FontWeight.SemiBold)
-            Text(text = "\$${String.format("%.2f", item.product.price)} c/u", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            Text(text = "\$${String.format(Locale.getDefault(), "%.2f", item.product.price)} c/u", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
 
         Row(
@@ -134,7 +148,7 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
         Spacer(modifier = Modifier.width(16.dp))
 
         Text(
-            text = "\$${String.format("%.2f", item.total)}",
+            text = "\$${String.format(Locale.getDefault(), "%.2f", item.total)}",
             fontWeight = FontWeight.Bold,
             modifier = Modifier.width(80.dp)
         )
@@ -145,10 +159,11 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
 fun CheckoutView(
     viewModel: PosViewModel,
     onBack: () -> Unit,
-    onComplete: () -> Unit
+    onComplete: (Order) -> Unit
 ) {
     var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
     var isDone by remember { mutableStateOf(false) }
+    var processedOrder by remember { mutableStateOf<Order?>(null) }
 
     Column(
         modifier = Modifier
@@ -164,7 +179,7 @@ fun CheckoutView(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Total a cobrar: \$${String.format("%.2f", viewModel.cartTotal)}",
+                "Total a cobrar: \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -204,7 +219,7 @@ fun CheckoutView(
             AppleButton(
                 text = "Confirmar Pago",
                 onClick = {
-                    viewModel.processCheckout(selectedMethod ?: PaymentMethod.CASH)
+                    processedOrder = viewModel.processCheckout(selectedMethod ?: PaymentMethod.CASH)
                     isDone = true
                 },
                 backgroundColor = if (selectedMethod != null) MaterialTheme.colorScheme.primary else Color.Gray
@@ -222,7 +237,7 @@ fun CheckoutView(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("¡Venta Completada!", style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.height(24.dp))
-                    AppleButton("Finalizar", onClick = onComplete)
+                    AppleButton("Ver Ticket", onClick = { processedOrder?.let { onComplete(it) } })
                 }
             }
         }

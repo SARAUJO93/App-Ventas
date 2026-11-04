@@ -12,12 +12,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Customer
 import com.example.myapplication.viewmodel.PosViewModel
 import com.example.myapplication.ui.components.AppleCard
+import java.util.Locale
 
 @Composable
 fun CustomersScreen(viewModel: PosViewModel) {
@@ -74,7 +73,7 @@ fun CustomerCard(customer: Customer) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(text = "Deuda", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     Text(
-                        text = "\$${String.format("%.2f", customer.debtBalance)}",
+                        text = "\$${String.format(Locale.getDefault(), "%.2f", customer.debtBalance)}",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
                     )
