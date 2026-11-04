@@ -14,10 +14,13 @@ data class Order(
     val id: String,
     val items: List<CartItem>,
     val subtotal: Double,
-    val tax: Double,
+    val discount: Double = 0.0,
+    val tax: Double = 0.0,
+    val tip: Double = 0.0,
     val total: Double,
     val status: OrderStatus,
     val date: Date = Date(),
     val paymentMethod: PaymentMethod? = null,
-    val customerId: String? = null
+    val customerId: String? = null,
+    val customerName: String? = null
 )

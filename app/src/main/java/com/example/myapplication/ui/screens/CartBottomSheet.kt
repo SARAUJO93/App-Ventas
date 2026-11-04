@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +23,7 @@ import com.example.myapplication.model.Customer
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
 import com.example.myapplication.ui.components.AppleButton
+import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.viewmodel.PosViewModel
 import java.util.Locale
 
@@ -33,6 +35,9 @@ fun CartBottomSheet(
     onDismiss: () -> Unit
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
+    val selectedTipPercent by viewModel.tipPercent.collectAsState()
+    val selectedDiscountPercent by viewModel.discountPercent.collectAsState()
+
     var showCheckout by remember { mutableStateOf(false) }
     var completedOrder by remember { mutableStateOf<Order?>(null) }
 
@@ -87,34 +92,78 @@ fun CartBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Descuento", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                    val discounts = listOf(0.0 to "Sin Desc.", 5.0 to "5%", 10.0 to "10%", 15.0 to "15%")
+                    items(discounts) { (percent, label) ->
+                        FilterChip(
+                            selected = selectedDiscountPercent == percent,
+                            onClick = { viewModel.setDiscountPercent(percent) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+
+                Text("Propina Sugerida", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+                    val tips = listOf(0.0 to "Sin Propina", 10.0 to "10%", 15.0 to "15%", 20.0 to "20%")
+                    items(tips) { (percent, label) ->
+                        FilterChip(
+                            selected = selectedTipPercent == percent,
+                            onClick = { viewModel.setTipPercent(percent) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 HorizontalDivider()
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Subtotal", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartSubtotal)}")
                 }
+
+                if (viewModel.cartDiscount > 0) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Descuento (${selectedDiscountPercent.toInt()}%)", color = AppleGreen)
+                        Text("-\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartDiscount)}", color = AppleGreen, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("IVA (16%)", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTax)}")
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Total", style = MaterialTheme.typography.titleMedium)
-                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+                if (viewModel.cartTip > 0) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Propina (${selectedTipPercent.toInt()}%)", color = MaterialTheme.colorScheme.primary)
+                        Text("+\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTip)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Total a Pagar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
 
                 AppleButton(
                     text = "Cobrar \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
+                    enabled = cartItems.isNotEmpty(),
                     onClick = { showCheckout = true }
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

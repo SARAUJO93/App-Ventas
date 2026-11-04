@@ -1,16 +1,20 @@
 package com.example.myapplication.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +31,9 @@ fun TicketReceiptModal(
     order: Order,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.date)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.background,
@@ -69,7 +76,7 @@ fun TicketReceiptModal(
                             fontSize = 12.sp,
                             color = Color.Black
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "--------------------------------",
                             modifier = Modifier.fillMaxWidth(),
@@ -79,11 +86,21 @@ fun TicketReceiptModal(
                         )
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Fecha:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
-                            Text(SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.date), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                            Text(formattedDate, fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Orden #:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
                             Text(order.id.takeLast(6), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                        }
+                        if (order.customerName != null) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Cliente:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                                Text(order.customerName, fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Pago:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                            Text(order.paymentMethod?.name ?: "CONTANTO", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
                         }
                         Text(
                             text = "--------------------------------",
@@ -115,9 +132,21 @@ fun TicketReceiptModal(
                             Text("SUBTOTAL", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
                             Text("\$${String.format(Locale.getDefault(), "%.2f", order.subtotal)}", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
                         }
+                        if (order.discount > 0) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("DESCUENTO", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                                Text("-\$${String.format(Locale.getDefault(), "%.2f", order.discount)}", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                            }
+                        }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("IVA", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                            Text("IVA (16%)", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
                             Text("\$${String.format(Locale.getDefault(), "%.2f", order.tax)}", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                        }
+                        if (order.tip > 0) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("PROPINA", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                                Text("+\$${String.format(Locale.getDefault(), "%.2f", order.tip)}", fontFamily = FontFamily.Monospace, fontSize = 14.sp, color = Color.Black)
+                            }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -137,24 +166,51 @@ fun TicketReceiptModal(
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                AppleButton(
-                    text = "Imprimir",
-                    onClick = onDismiss,
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        val shareText = buildString {
+                            appendLine("🧾 NOVA POS CAFE - TICKET DE VENTA")
+                            appendLine("Orden #: ${order.id.takeLast(6)}")
+                            appendLine("Fecha: $formattedDate")
+                            if (order.customerName != null) appendLine("Cliente: ${order.customerName}")
+                            appendLine("--------------------------------")
+                            order.items.forEach { item ->
+                                appendLine("${item.quantity}x ${item.product.name} - \$${String.format(Locale.getDefault(), "%.2f", item.total)}")
+                            }
+                            appendLine("--------------------------------")
+                            appendLine("Subtotal: \$${String.format(Locale.getDefault(), "%.2f", order.subtotal)}")
+                            if (order.discount > 0) appendLine("Descuento: -\$${String.format(Locale.getDefault(), "%.2f", order.discount)}")
+                            appendLine("IVA (16%): \$${String.format(Locale.getDefault(), "%.2f", order.tax)}")
+                            if (order.tip > 0) appendLine("Propina: +\$${String.format(Locale.getDefault(), "%.2f", order.tip)}")
+                            appendLine("TOTAL: \$${String.format(Locale.getDefault(), "%.2f", order.total)}")
+                            appendLine("Pago: ${order.paymentMethod?.name ?: "EFECTIVO"}")
+                            appendLine("\n¡Gracias por su preferencia!")
+                        }
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, shareText)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Compartir Recibo Nova POS"))
+                    },
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Compartir")
+                }
+
                 AppleButton(
                     text = "Cerrar",
                     onClick = onDismiss,
-                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
-                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

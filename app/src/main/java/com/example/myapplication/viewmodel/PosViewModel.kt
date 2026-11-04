@@ -28,16 +28,39 @@ class PosViewModel @Inject constructor(
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
 
+    private val _tipPercent = MutableStateFlow(0.0)
+    val tipPercent = _tipPercent.asStateFlow()
+
+    private val _discountPercent = MutableStateFlow(0.0)
+    val discountPercent = _discountPercent.asStateFlow()
+
     private var activeCheckoutTableId: String? = null
 
     val cartSubtotal: Double
         get() = _cartItems.value.sumOf { it.total }
 
+    val cartDiscount: Double
+        get() = cartSubtotal * (_discountPercent.value / 100.0)
+
+    val cartTaxableAmount: Double
+        get() = (cartSubtotal - cartDiscount).coerceAtLeast(0.0)
+
     val cartTax: Double
-        get() = cartSubtotal * 0.16
+        get() = cartTaxableAmount * 0.16
+
+    val cartTip: Double
+        get() = cartTaxableAmount * (_tipPercent.value / 100.0)
 
     val cartTotal: Double
-        get() = cartSubtotal + cartTax
+        get() = cartTaxableAmount + cartTax + cartTip
+
+    fun setTipPercent(percent: Double) {
+        _tipPercent.value = percent
+    }
+
+    fun setDiscountPercent(percent: Double) {
+        _discountPercent.value = percent
+    }
 
     fun getTableItems(tableId: String): Flow<List<TableItemEntity>> {
         return repository.getTableItems(tableId)
@@ -66,6 +89,8 @@ class PosViewModel @Inject constructor(
 
     fun clearCart() {
         _cartItems.value = emptyList()
+        _tipPercent.value = 0.0
+        _discountPercent.value = 0.0
         activeCheckoutTableId = null
     }
 
@@ -178,15 +203,20 @@ class PosViewModel @Inject constructor(
         val currentItems = _cartItems.value.toList()
         val tableIdToClear = activeCheckoutTableId
         val totalToCharge = cartTotal
+        val customerObj = customers.value.find { it.id == customerId }
 
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
             items = currentItems,
             subtotal = cartSubtotal,
+            discount = cartDiscount,
             tax = cartTax,
+            tip = cartTip,
             total = totalToCharge,
             status = OrderStatus.COMPLETED,
-            paymentMethod = method
+            paymentMethod = method,
+            customerId = customerId,
+            customerName = customerObj?.name
         )
         viewModelScope.launch {
             repository.deductStock(currentItems)
