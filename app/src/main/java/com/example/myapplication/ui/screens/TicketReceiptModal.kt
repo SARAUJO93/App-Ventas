@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.Order
 import com.example.myapplication.ui.components.AppleButton
-import com.example.myapplication.ui.components.AppleCard
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -54,7 +53,7 @@ fun TicketReceiptModal(
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         Text(
-                            text = "YIMI POS CAFE",
+                            text = "NOVA POS CAFE",
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontFamily = FontFamily.Monospace,
@@ -63,7 +62,7 @@ fun TicketReceiptModal(
                             color = Color.Black
                         )
                         Text(
-                            text = "Av. Principal 123, Ciudad\nRFC: YIMI123456789\nTel: 555-1234-567",
+                            text = "Av. Principal 123, Ciudad\nRFC: NOVA123456789\nTel: 555-1234-567",
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontFamily = FontFamily.Monospace,

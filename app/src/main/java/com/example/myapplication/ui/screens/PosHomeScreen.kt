@@ -12,7 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,7 +29,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 
 @Composable
 fun PosHomeScreen() {
-    val viewModel: PosViewModel = viewModel()
+    val viewModel: PosViewModel = hiltViewModel()
     val navController = rememberNavController()
 
     val items = listOf(
