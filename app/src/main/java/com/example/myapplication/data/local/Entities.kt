@@ -93,3 +93,19 @@ data class OrderItemEntity(
     val quantity: Int,
     val colorHex: Long
 )
+
+@Entity(tableName = "cash_shifts")
+data class CashShiftEntity(
+    @PrimaryKey val id: String,
+    val cashierName: String,
+    val openTimestamp: Long,
+    val closeTimestamp: Long? = null,
+    val initialCash: Double,
+    val cashSales: Double = 0.0,
+    val cardSales: Double = 0.0,
+    val transferSales: Double = 0.0,
+    val creditSales: Double = 0.0,
+    val expectedCash: Double = initialCash,
+    val actualCash: Double = 0.0,
+    val status: String = "OPEN"
+)

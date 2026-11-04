@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.data.local.CashShiftEntity
 import com.example.myapplication.data.local.TableItemEntity
 import com.example.myapplication.data.repository.BusinessSettingsRepository
 import com.example.myapplication.data.repository.PosRepository
@@ -29,6 +30,9 @@ class PosViewModel @Inject constructor(
 
     val orders: StateFlow<List<Order>> = repository.getOrders()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val activeShift: StateFlow<CashShiftEntity?> = repository.getActiveShift()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val businessSettings: StateFlow<BusinessSettings> = settingsRepository.settings
 
@@ -60,6 +64,21 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartTaxableAmount + cartTax + cartTip
+
+    fun openShift(cashierName: String, initialCash: Double) {
+        viewModelScope.launch {
+            repository.openShift(cashierName, initialCash)
+        }
+    }
+
+    fun closeShift(actualCash: Double) {
+        viewModelScope.launch {
+            val current = activeShift.value
+            if (current != null) {
+                repository.closeShift(current.id, actualCash)
+            }
+        }
+    }
 
     fun saveBusinessSettings(newSettings: BusinessSettings) {
         settingsRepository.saveSettings(newSettings)
@@ -232,6 +251,7 @@ class PosViewModel @Inject constructor(
         viewModelScope.launch {
             repository.saveOrder(newOrder)
             repository.deductStock(currentItems)
+            repository.recordSaleInActiveShift(totalToCharge, method)
             if (method == PaymentMethod.CREDIT && customerId != null) {
                 repository.addCustomerDebt(customerId, totalToCharge)
             }

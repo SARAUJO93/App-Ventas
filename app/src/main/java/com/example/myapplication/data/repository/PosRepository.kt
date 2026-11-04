@@ -16,6 +16,8 @@ interface PosRepository {
     fun getCustomers(): Flow<List<Customer>>
     fun getTableItems(tableId: String): Flow<List<TableItemEntity>>
     fun getOrders(): Flow<List<Order>>
+    fun getActiveShift(): Flow<CashShiftEntity?>
+    fun getAllShifts(): Flow<List<CashShiftEntity>>
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
     suspend fun deleteProduct(productId: String)
@@ -29,6 +31,9 @@ interface PosRepository {
     suspend fun addCustomerDebt(customerId: String, amount: Double)
     suspend fun recordCustomerPayment(customerId: String, paymentAmount: Double)
     suspend fun saveOrder(order: Order)
+    suspend fun openShift(cashierName: String, initialCash: Double)
+    suspend fun closeShift(shiftId: String, actualCash: Double)
+    suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod)
     suspend fun deductStock(cartItems: List<CartItem>)
     suspend fun populateInitialData()
 }
@@ -86,6 +91,60 @@ class PosRepositoryImpl @Inject constructor(
                     customerName = entity.customerName
                 )
             }
+        }
+    }
+
+    override fun getActiveShift(): Flow<CashShiftEntity?> {
+        return dao.getActiveShift()
+    }
+
+    override fun getAllShifts(): Flow<List<CashShiftEntity>> {
+        return dao.getAllShifts()
+    }
+
+    override suspend fun openShift(cashierName: String, initialCash: Double) {
+        val newShift = CashShiftEntity(
+            id = UUID.randomUUID().toString(),
+            cashierName = cashierName,
+            openTimestamp = System.currentTimeMillis(),
+            initialCash = initialCash,
+            expectedCash = initialCash,
+            status = "OPEN"
+        )
+        dao.insertShift(newShift)
+    }
+
+    override suspend fun closeShift(shiftId: String, actualCash: Double) {
+        val currentShift = dao.getAllShifts().first().find { it.id == shiftId }
+        if (currentShift != null) {
+            val updated = currentShift.copy(
+                actualCash = actualCash,
+                closeTimestamp = System.currentTimeMillis(),
+                status = "CLOSED"
+            )
+            dao.updateShift(updated)
+        }
+    }
+
+    override suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod) {
+        val activeShift = dao.getActiveShift().first()
+        if (activeShift != null) {
+            val updatedShift = when (paymentMethod) {
+                PaymentMethod.CASH -> activeShift.copy(
+                    cashSales = activeShift.cashSales + amount,
+                    expectedCash = activeShift.expectedCash + amount
+                )
+                PaymentMethod.CARD -> activeShift.copy(
+                    cardSales = activeShift.cardSales + amount
+                )
+                PaymentMethod.TRANSFER -> activeShift.copy(
+                    transferSales = activeShift.transferSales + amount
+                )
+                PaymentMethod.CREDIT -> activeShift.copy(
+                    creditSales = activeShift.creditSales + amount
+                )
+            }
+            dao.updateShift(updatedShift)
         }
     }
 

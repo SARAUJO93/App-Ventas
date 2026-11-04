@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.TrendingUp
@@ -20,10 +21,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
+import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleOrange
+import com.example.myapplication.ui.theme.AppleRed
 import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -32,7 +35,10 @@ import java.util.Locale
 @Composable
 fun ReportsScreen(viewModel: PosViewModel) {
     val orders by viewModel.orders.collectAsState()
+    val activeShift by viewModel.activeShift.collectAsState()
+
     var selectedOrderForReceipt by remember { mutableStateOf<Order?>(null) }
+    var showShiftModal by remember { mutableStateOf(false) }
 
     val totalSales = orders.sumOf { it.total }
     val totalOrders = orders.size
@@ -55,17 +61,59 @@ fun ReportsScreen(viewModel: PosViewModel) {
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        Text(
-            text = "Reportes y Estadísticas",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Reportes y Estadísticas",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            OutlinedButton(onClick = { showShiftModal = true }) {
+                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (activeShift == null) "Apertura Caja" else "Corte Z")
+            }
+        }
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
+            // Estado del Turno de Caja
+            item {
+                AppleCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = if (activeShift != null) "Turno Activo: ${activeShift!!.cashierName}" else "Turno Cerrado",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (activeShift != null) "Fondo: \$${String.format(Locale.getDefault(), "%.2f", activeShift!!.initialCash)} • Esperado: \$${String.format(Locale.getDefault(), "%.2f", activeShift!!.expectedCash)}" else "Abre turno de caja para realizar arqueos",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(if (activeShift != null) AppleGreen else AppleRed)
+                        )
+                    }
+                }
+            }
+
             // KPI Summary Cards
             item {
                 Row(
@@ -232,9 +280,17 @@ fun ReportsScreen(viewModel: PosViewModel) {
         }
     }
 
+    if (showShiftModal) {
+        CashShiftModal(
+            viewModel = viewModel,
+            onDismiss = { showShiftModal = false }
+        )
+    }
+
     if (selectedOrderForReceipt != null) {
         TicketReceiptModal(
             order = selectedOrderForReceipt!!,
+            viewModel = viewModel,
             onDismiss = { selectedOrderForReceipt = null }
         )
     }

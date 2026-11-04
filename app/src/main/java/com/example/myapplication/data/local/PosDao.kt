@@ -79,4 +79,16 @@ interface PosDao {
 
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     suspend fun getOrderItems(orderId: String): List<OrderItemEntity>
+
+    @Query("SELECT * FROM cash_shifts WHERE status = 'OPEN' ORDER BY openTimestamp DESC LIMIT 1")
+    fun getActiveShift(): Flow<CashShiftEntity?>
+
+    @Query("SELECT * FROM cash_shifts ORDER BY openTimestamp DESC")
+    fun getAllShifts(): Flow<List<CashShiftEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertShift(shift: CashShiftEntity)
+
+    @Update
+    suspend fun updateShift(shift: CashShiftEntity)
 }
