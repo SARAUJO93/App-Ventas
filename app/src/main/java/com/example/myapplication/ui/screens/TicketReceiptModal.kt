@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,8 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.model.BusinessSettings
 import com.example.myapplication.model.Order
 import com.example.myapplication.ui.components.AppleButton
+import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -29,9 +32,13 @@ import java.util.Locale
 @Composable
 fun TicketReceiptModal(
     order: Order,
+    viewModel: PosViewModel? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val settingsState = viewModel?.businessSettings?.collectAsState()
+    val settings = settingsState?.value ?: BusinessSettings()
+
     val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.date)
 
     ModalBottomSheet(
@@ -60,7 +67,7 @@ fun TicketReceiptModal(
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
                         Text(
-                            text = "NOVA POS CAFE",
+                            text = settings.businessName.uppercase(),
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontFamily = FontFamily.Monospace,
@@ -69,7 +76,7 @@ fun TicketReceiptModal(
                             color = Color.Black
                         )
                         Text(
-                            text = "Av. Principal 123, Ciudad\nRFC: NOVA123456789\nTel: 555-1234-567",
+                            text = "${settings.address}\nRFC: ${settings.taxId}\nTel: ${settings.phone}",
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontFamily = FontFamily.Monospace,
@@ -155,7 +162,7 @@ fun TicketReceiptModal(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "¡GRACIAS POR SU COMPRA!",
+                            text = settings.footerNote,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             fontFamily = FontFamily.Monospace,
@@ -173,7 +180,10 @@ fun TicketReceiptModal(
                 OutlinedButton(
                     onClick = {
                         val shareText = buildString {
-                            appendLine("🧾 NOVA POS CAFE - TICKET DE VENTA")
+                            appendLine("🧾 ${settings.businessName.uppercase()} - TICKET DE VENTA")
+                            appendLine("Dirección: ${settings.address}")
+                            appendLine("RFC: ${settings.taxId}")
+                            appendLine("Tel: ${settings.phone}")
                             appendLine("Orden #: ${order.id.takeLast(6)}")
                             appendLine("Fecha: $formattedDate")
                             if (order.customerName != null) appendLine("Cliente: ${order.customerName}")
@@ -188,7 +198,7 @@ fun TicketReceiptModal(
                             if (order.tip > 0) appendLine("Propina: +\$${String.format(Locale.getDefault(), "%.2f", order.tip)}")
                             appendLine("TOTAL: \$${String.format(Locale.getDefault(), "%.2f", order.total)}")
                             appendLine("Pago: ${order.paymentMethod?.name ?: "EFECTIVO"}")
-                            appendLine("\n¡Gracias por su preferencia!")
+                            appendLine("\n${settings.footerNote}")
                         }
                         val shareIntent = Intent().apply {
                             action = Intent.ACTION_SEND

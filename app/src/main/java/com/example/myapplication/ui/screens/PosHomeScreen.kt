@@ -6,11 +6,13 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TableBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -27,10 +29,14 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Reports : Screen("reports", "Reportes", Icons.Default.Assessment)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosHomeScreen() {
     val viewModel: PosViewModel = hiltViewModel()
     val navController = rememberNavController()
+    val businessSettings by viewModel.businessSettings.collectAsState()
+
+    var showSettingsSheet by remember { mutableStateOf(false) }
 
     val items = listOf(
         Screen.Sales,
@@ -41,6 +47,29 @@ fun PosHomeScreen() {
     )
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = businessSettings.businessName,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { showSettingsSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Ajustes del Negocio",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -83,5 +112,12 @@ fun PosHomeScreen() {
             composable(Screen.Inventory.route) { InventoryScreen(viewModel) }
             composable(Screen.Reports.route) { ReportsScreen(viewModel) }
         }
+    }
+
+    if (showSettingsSheet) {
+        SettingsScreen(
+            viewModel = viewModel,
+            onDismiss = { showSettingsSheet = false }
+        )
     }
 }

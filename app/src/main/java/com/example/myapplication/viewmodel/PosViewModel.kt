@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.local.TableItemEntity
+import com.example.myapplication.data.repository.BusinessSettingsRepository
 import com.example.myapplication.data.repository.PosRepository
 import com.example.myapplication.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PosViewModel @Inject constructor(
-    private val repository: PosRepository
+    private val repository: PosRepository,
+    private val settingsRepository: BusinessSettingsRepository
 ) : ViewModel() {
 
     val products: StateFlow<List<Product>> = repository.getProducts()
@@ -27,6 +29,8 @@ class PosViewModel @Inject constructor(
 
     val orders: StateFlow<List<Order>> = repository.getOrders()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val businessSettings: StateFlow<BusinessSettings> = settingsRepository.settings
 
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
@@ -56,6 +60,10 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartTaxableAmount + cartTax + cartTip
+
+    fun saveBusinessSettings(newSettings: BusinessSettings) {
+        settingsRepository.saveSettings(newSettings)
+    }
 
     fun setTipPercent(percent: Double) {
         _tipPercent.value = percent
