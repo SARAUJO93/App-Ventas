@@ -109,3 +109,11 @@ data class CashShiftEntity(
     val actualCash: Double = 0.0,
     val status: String = "OPEN"
 )
+
+@Entity(tableName = "employees")
+data class EmployeeEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val pin: String,
+    val role: String
+)

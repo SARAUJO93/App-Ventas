@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.local.CashShiftEntity
+import com.example.myapplication.data.local.EmployeeEntity
 import com.example.myapplication.data.local.TableItemEntity
 import com.example.myapplication.data.repository.BusinessSettingsRepository
 import com.example.myapplication.data.repository.PosRepository
@@ -36,6 +37,9 @@ class PosViewModel @Inject constructor(
 
     val businessSettings: StateFlow<BusinessSettings> = settingsRepository.settings
 
+    private val _currentEmployee = MutableStateFlow<EmployeeEntity?>(null)
+    val currentEmployee: StateFlow<EmployeeEntity?> = _currentEmployee.asStateFlow()
+
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
 
@@ -64,6 +68,22 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartTaxableAmount + cartTax + cartTip
+
+    fun loginWithPin(pin: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        viewModelScope.launch {
+            val emp = repository.authenticatePin(pin)
+            if (emp != null) {
+                _currentEmployee.value = emp
+                onSuccess()
+            } else {
+                onError()
+            }
+        }
+    }
+
+    fun logoutEmployee() {
+        _currentEmployee.value = null
+    }
 
     fun openShift(cashierName: String, initialCash: Double) {
         viewModelScope.launch {

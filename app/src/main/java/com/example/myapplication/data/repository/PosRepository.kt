@@ -18,6 +18,7 @@ interface PosRepository {
     fun getOrders(): Flow<List<Order>>
     fun getActiveShift(): Flow<CashShiftEntity?>
     fun getAllShifts(): Flow<List<CashShiftEntity>>
+    suspend fun authenticatePin(pin: String): EmployeeEntity?
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
     suspend fun deleteProduct(productId: String)
@@ -100,6 +101,10 @@ class PosRepositoryImpl @Inject constructor(
 
     override fun getAllShifts(): Flow<List<CashShiftEntity>> {
         return dao.getAllShifts()
+    }
+
+    override suspend fun authenticatePin(pin: String): EmployeeEntity? {
+        return dao.getEmployeeByPin(pin)
     }
 
     override suspend fun openShift(cashierName: String, initialCash: Double) {
@@ -286,6 +291,15 @@ class PosRepositoryImpl @Inject constructor(
     }
 
     override suspend fun populateInitialData() {
+        val existingEmployees = dao.getAllEmployees().first()
+        if (existingEmployees.isEmpty()) {
+            val defaultEmployees = listOf(
+                EmployeeEntity("1", "Administrador", "1234", "ADMIN"),
+                EmployeeEntity("2", "Cajero Principal", "0000", "CASHIER")
+            )
+            dao.insertEmployees(defaultEmployees)
+        }
+
         val existingProducts = dao.getAllProducts().first()
         if (existingProducts.isEmpty()) {
             val defaultProducts = listOf(

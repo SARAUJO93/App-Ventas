@@ -1,8 +1,10 @@
 package com.example.myapplication.ui.screens
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
@@ -19,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.ui.theme.AppleRed
 import com.example.myapplication.viewmodel.PosViewModel
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -34,34 +37,66 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 fun PosHomeScreen() {
     val viewModel: PosViewModel = hiltViewModel()
     val navController = rememberNavController()
+    val currentEmployee by viewModel.currentEmployee.collectAsState()
     val businessSettings by viewModel.businessSettings.collectAsState()
 
     var showSettingsSheet by remember { mutableStateOf(false) }
 
-    val items = listOf(
-        Screen.Sales,
-        Screen.Tables,
-        Screen.Customers,
-        Screen.Inventory,
-        Screen.Reports
-    )
+    if (currentEmployee == null) {
+        PinLockScreen(viewModel = viewModel)
+        return
+    }
+
+    val isAdmin = currentEmployee?.role == "ADMIN"
+
+    val items = if (isAdmin) {
+        listOf(
+            Screen.Sales,
+            Screen.Tables,
+            Screen.Customers,
+            Screen.Inventory,
+            Screen.Reports
+        )
+    } else {
+        listOf(
+            Screen.Sales,
+            Screen.Tables,
+            Screen.Customers
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = businessSettings.businessName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column {
+                        Text(
+                            text = businessSettings.businessName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${currentEmployee!!.name} • ${if (isAdmin) "Administrador" else "Cajero"}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 actions = {
-                    IconButton(onClick = { showSettingsSheet = true }) {
+                    if (isAdmin) {
+                        IconButton(onClick = { showSettingsSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Ajustes del Negocio",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    IconButton(onClick = { viewModel.logoutEmployee() }) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Ajustes del Negocio",
-                            tint = MaterialTheme.colorScheme.primary
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Cerrar Sesión",
+                            tint = AppleRed
                         )
                     }
                 },

@@ -91,4 +91,13 @@ interface PosDao {
 
     @Update
     suspend fun updateShift(shift: CashShiftEntity)
+
+    @Query("SELECT * FROM employees")
+    fun getAllEmployees(): Flow<List<EmployeeEntity>>
+
+    @Query("SELECT * FROM employees WHERE pin = :pin LIMIT 1")
+    suspend fun getEmployeeByPin(pin: String): EmployeeEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEmployees(employees: List<EmployeeEntity>)
 }

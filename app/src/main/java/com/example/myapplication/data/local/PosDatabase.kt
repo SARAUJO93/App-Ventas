@@ -11,9 +11,10 @@ import androidx.room.RoomDatabase
         CustomerEntity::class,
         OrderEntity::class,
         OrderItemEntity::class,
-        CashShiftEntity::class
+        CashShiftEntity::class,
+        EmployeeEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {
