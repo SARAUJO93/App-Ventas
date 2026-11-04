@@ -103,4 +103,10 @@ interface PosDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEmployees(employees: List<EmployeeEntity>)
+
+    @Query("SELECT * FROM cash_transactions ORDER BY timestamp DESC")
+    fun getAllTransactions(): Flow<List<TransactionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: TransactionEntity)
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.local.CashShiftEntity
 import com.example.myapplication.data.local.EmployeeEntity
 import com.example.myapplication.data.local.TableItemEntity
+import com.example.myapplication.data.local.TransactionEntity
 import com.example.myapplication.data.repository.BusinessSettingsRepository
 import com.example.myapplication.data.repository.PosRepository
 import com.example.myapplication.model.*
@@ -34,6 +35,9 @@ class PosViewModel @Inject constructor(
 
     val activeShift: StateFlow<CashShiftEntity?> = repository.getActiveShift()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val transactions: StateFlow<List<TransactionEntity>> = repository.getTransactions()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val businessSettings: StateFlow<BusinessSettings> = settingsRepository.settings
 
@@ -97,6 +101,12 @@ class PosViewModel @Inject constructor(
             if (current != null) {
                 repository.closeShift(current.id, actualCash)
             }
+        }
+    }
+
+    fun addTransaction(type: String, amount: Double, category: String, note: String) {
+        viewModelScope.launch {
+            repository.addTransaction(type, amount, category, note)
         }
     }
 

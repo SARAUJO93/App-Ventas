@@ -3,11 +3,16 @@ package com.example.myapplication.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.TrendingUp
@@ -18,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.data.local.TransactionEntity
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
 import com.example.myapplication.ui.components.AppleButton
@@ -36,13 +43,20 @@ import java.util.Locale
 fun ReportsScreen(viewModel: PosViewModel) {
     val orders by viewModel.orders.collectAsState()
     val activeShift by viewModel.activeShift.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
 
     var selectedOrderForReceipt by remember { mutableStateOf<Order?>(null) }
     var showShiftModal by remember { mutableStateOf(false) }
+    var showTransactionSheet by remember { mutableStateOf(false) }
+    var transactionTypeToAdd by remember { mutableStateOf("INCOME") }
 
     val totalSales = orders.sumOf { it.total }
     val totalOrders = orders.size
     val averageTicket = if (totalOrders > 0) totalSales / totalOrders else 0.0
+
+    val manualIncomes = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+    val manualExpenses = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+    val netProfit = totalSales + manualIncomes - manualExpenses
 
     val salesByPaymentMethod = PaymentMethod.entries.associateWith { method ->
         orders.filter { it.paymentMethod == method }.sumOf { it.total }
@@ -69,7 +83,7 @@ fun ReportsScreen(viewModel: PosViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Reportes y Estadísticas",
+                text = "Reportes y Finanzas",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -110,6 +124,79 @@ fun ReportsScreen(viewModel: PosViewModel) {
                                 .clip(CircleShape)
                                 .background(if (activeShift != null) AppleGreen else AppleRed)
                         )
+                    }
+                }
+            }
+
+            // Resumen Financiero Real: Ingresos vs Gastos
+            item {
+                AppleCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Balance General", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "Ganancia Neta: \$${String.format(Locale.getDefault(), "%.2f", netProfit)}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (netProfit >= 0) AppleGreen else AppleRed
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ArrowUpward, contentDescription = null, tint = AppleGreen, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Ingresos: \$${String.format(Locale.getDefault(), "%.2f", totalSales + manualIncomes)}", style = MaterialTheme.typography.bodyMedium, color = AppleGreen, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ArrowDownward, contentDescription = null, tint = AppleRed, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Gastos: \$${String.format(Locale.getDefault(), "%.2f", manualExpenses)}", style = MaterialTheme.typography.bodyMedium, color = AppleRed, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                transactionTypeToAdd = "INCOME"
+                                showTransactionSheet = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AppleGreen),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("↑ Ingreso")
+                        }
+
+                        Button(
+                            onClick = {
+                                transactionTypeToAdd = "EXPENSE"
+                                showTransactionSheet = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AppleRed),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("↓ Gasto")
+                        }
                     }
                 }
             }
@@ -191,6 +278,30 @@ fun ReportsScreen(viewModel: PosViewModel) {
                             )
                         }
                     }
+                }
+            }
+
+            // Movimientos Manuales de Caja (Ingresos / Gastos)
+            item {
+                Text(
+                    text = "Movimientos Manuales de Caja",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            if (transactions.isEmpty()) {
+                item {
+                    Text(
+                        text = "No se han registrado ingresos o gastos manuales",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                items(transactions, key = { it.id }) { transaction ->
+                    TransactionRowCard(transaction)
                 }
             }
 
@@ -280,6 +391,17 @@ fun ReportsScreen(viewModel: PosViewModel) {
         }
     }
 
+    if (showTransactionSheet) {
+        AddTransactionSheet(
+            type = transactionTypeToAdd,
+            onDismiss = { showTransactionSheet = false },
+            onConfirm = { type, amount, category, note ->
+                viewModel.addTransaction(type, amount, category, note)
+                showTransactionSheet = false
+            }
+        )
+    }
+
     if (showShiftModal) {
         CashShiftModal(
             viewModel = viewModel,
@@ -293,6 +415,139 @@ fun ReportsScreen(viewModel: PosViewModel) {
             viewModel = viewModel,
             onDismiss = { selectedOrderForReceipt = null }
         )
+    }
+}
+
+@Composable
+fun TransactionRowCard(transaction: TransactionEntity) {
+    val isIncome = transaction.type == "INCOME"
+    val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(transaction.timestamp)
+
+    AppleCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isIncome) AppleGreen.copy(alpha = 0.15f) else AppleRed.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isIncome) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                        contentDescription = null,
+                        tint = if (isIncome) AppleGreen else AppleRed,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = transaction.category + if (transaction.note.isNotEmpty()) " (${transaction.note})" else "",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = formattedDate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                text = "${if (isIncome) "+" else "-"}\$${String.format(Locale.getDefault(), "%.2f", transaction.amount)}",
+                fontWeight = FontWeight.Bold,
+                color = if (isIncome) AppleGreen else AppleRed
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddTransactionSheet(
+    type: String,
+    onDismiss: () -> Unit,
+    onConfirm: (type: String, amount: Double, category: String, note: String) -> Unit
+) {
+    val isIncome = type == "INCOME"
+    var amountText by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf(if (isIncome) "Inyección de Caja" else "Insumos / Proveedor") }
+    var note by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+
+    val incomeCategories = listOf("Inyección de Caja", "Abono Especial", "Otros Ingresos")
+    val expenseCategories = listOf("Insumos / Proveedor", "Servicios (Luz/Agua)", "Sueldos / Propina", "Retiro de Caja", "Otro Gasto")
+    val categories = if (isIncome) incomeCategories else expenseCategories
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = if (isIncome) "Registrar Ingreso Manual" else "Registrar Gasto de Caja",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isIncome) AppleGreen else AppleRed
+            )
+
+            if (errorMessage.isNotEmpty()) {
+                Text(text = errorMessage, color = AppleRed, style = MaterialTheme.typography.bodySmall)
+            }
+
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it },
+                label = { Text("Monto ($)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Text("Categoría del Movimiento", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(category) }
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Nota / Justificación (Opcional)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AppleButton(
+                text = if (isIncome) "Guardar Ingreso" else "Guardar Gasto",
+                backgroundColor = if (isIncome) AppleGreen else AppleRed,
+                onClick = {
+                    val amount = amountText.toDoubleOrNull()
+                    when {
+                        amount == null || amount <= 0 -> errorMessage = "Ingresa un monto válido mayor a 0"
+                        else -> onConfirm(type, amount, selectedCategory, note.trim())
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
 

@@ -18,6 +18,7 @@ interface PosRepository {
     fun getOrders(): Flow<List<Order>>
     fun getActiveShift(): Flow<CashShiftEntity?>
     fun getAllShifts(): Flow<List<CashShiftEntity>>
+    fun getTransactions(): Flow<List<TransactionEntity>>
     suspend fun getProductByBarcode(barcode: String): Product?
     suspend fun authenticatePin(pin: String): EmployeeEntity?
     suspend fun addProduct(product: Product)
@@ -36,6 +37,7 @@ interface PosRepository {
     suspend fun openShift(cashierName: String, initialCash: Double)
     suspend fun closeShift(shiftId: String, actualCash: Double)
     suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod)
+    suspend fun addTransaction(type: String, amount: Double, category: String, note: String)
     suspend fun deductStock(cartItems: List<CartItem>)
     suspend fun populateInitialData()
 }
@@ -104,6 +106,10 @@ class PosRepositoryImpl @Inject constructor(
         return dao.getAllShifts()
     }
 
+    override fun getTransactions(): Flow<List<TransactionEntity>> {
+        return dao.getAllTransactions()
+    }
+
     override suspend fun getProductByBarcode(barcode: String): Product? {
         return dao.getProductByBarcode(barcode)?.toDomain()
     }
@@ -155,6 +161,25 @@ class PosRepositoryImpl @Inject constructor(
                 )
             }
             dao.updateShift(updatedShift)
+        }
+    }
+
+    override suspend fun addTransaction(type: String, amount: Double, category: String, note: String) {
+        val transaction = TransactionEntity(
+            id = UUID.randomUUID().toString(),
+            type = type,
+            amount = amount,
+            category = category,
+            note = note,
+            timestamp = System.currentTimeMillis()
+        )
+        dao.insertTransaction(transaction)
+
+        // Si la transacción es ingreso o gasto manual en efectivo, ajustar el esperado en caja
+        val activeShift = dao.getActiveShift().first()
+        if (activeShift != null) {
+            val adjustment = if (type == "INCOME") amount else -amount
+            dao.updateShift(activeShift.copy(expectedCash = activeShift.expectedCash + adjustment))
         }
     }
 

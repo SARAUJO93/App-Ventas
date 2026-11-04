@@ -118,3 +118,13 @@ data class EmployeeEntity(
     val pin: String,
     val role: String
 )
+
+@Entity(tableName = "cash_transactions")
+data class TransactionEntity(
+    @PrimaryKey val id: String,
+    val type: String, // "INCOME", "EXPENSE"
+    val amount: Double,
+    val category: String,
+    val note: String,
+    val timestamp: Long
+)
