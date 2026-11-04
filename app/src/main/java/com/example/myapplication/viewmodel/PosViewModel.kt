@@ -116,6 +116,22 @@ class PosViewModel @Inject constructor(
         return repository.getTableItems(tableId)
     }
 
+    fun scanAndAddToCart(
+        barcode: String,
+        onFound: (Product) -> Unit,
+        onNotFound: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val product = repository.getProductByBarcode(barcode)
+            if (product != null) {
+                addToCart(product)
+                onFound(product)
+            } else {
+                onNotFound(barcode)
+            }
+        }
+    }
+
     fun addToCart(product: Product) {
         _cartItems.update { current ->
             val existing = current.find { it.product.id == product.id }
@@ -144,7 +160,7 @@ class PosViewModel @Inject constructor(
         activeCheckoutTableId = null
     }
 
-    fun addProduct(name: String, price: Double, category: String, stock: Int, colorHex: Long) {
+    fun addProduct(name: String, price: Double, category: String, stock: Int, colorHex: Long, barcode: String? = null) {
         viewModelScope.launch {
             val newProduct = Product(
                 id = UUID.randomUUID().toString(),
@@ -152,7 +168,8 @@ class PosViewModel @Inject constructor(
                 price = price,
                 category = category,
                 stock = stock,
-                colorHex = colorHex
+                colorHex = colorHex,
+                barcode = barcode
             )
             repository.addProduct(newProduct)
         }

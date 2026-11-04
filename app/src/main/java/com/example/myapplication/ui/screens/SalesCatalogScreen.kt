@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,12 +9,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Product
@@ -27,11 +31,14 @@ import java.util.Locale
 fun SalesCatalogScreen(viewModel: PosViewModel) {
     val products by viewModel.products.collectAsState()
     val cartItems by viewModel.cartItems.collectAsState()
+    val context = LocalContext.current
 
     val categories = listOf("Todos", "Bebidas", "Alimentos", "Postres", "Panadería")
     var selectedCategoryIndex by remember { mutableStateOf(0) }
 
     var showCartSheet by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
@@ -65,11 +72,29 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Text(
-                text = "Catálogo de Ventas",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Catálogo de Ventas",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(
+                    onClick = { showBarcodeScanner = true },
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = "Escanear Código",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
 
             AppleSegmentedControl(
                 items = categories,
@@ -92,6 +117,23 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                 }
             }
         }
+    }
+
+    if (showBarcodeScanner) {
+        BarcodeScannerModal(
+            onDismiss = { showBarcodeScanner = false },
+            onBarcodeScanned = { barcode ->
+                viewModel.scanAndAddToCart(
+                    barcode = barcode,
+                    onFound = { product ->
+                        Toast.makeText(context, "Agregado: ${product.name}", Toast.LENGTH_SHORT).show()
+                    },
+                    onNotFound = { code ->
+                        Toast.makeText(context, "Código no registrado: $code", Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+        )
     }
 
     if (showCartSheet) {

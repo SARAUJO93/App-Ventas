@@ -14,11 +14,12 @@ data class ProductEntity(
     val price: Double,
     val category: String,
     val stock: Int,
-    val colorHex: Long
+    val colorHex: Long,
+    val barcode: String? = null
 )
 
-fun ProductEntity.toDomain() = Product(id, name, price, category, stock, colorHex)
-fun Product.toEntity() = ProductEntity(id, name, price, category, stock, colorHex)
+fun ProductEntity.toDomain() = Product(id, name, price, category, stock, colorHex, barcode)
+fun Product.toEntity() = ProductEntity(id, name, price, category, stock, colorHex, barcode)
 
 @Entity(tableName = "tables")
 data class TableEntity(

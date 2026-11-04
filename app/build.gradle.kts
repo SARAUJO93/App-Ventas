@@ -56,6 +56,12 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.material)
 
+    // CameraX & ML Kit
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    implementation(libs.mlkit.barcode)
+
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

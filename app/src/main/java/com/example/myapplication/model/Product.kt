@@ -6,5 +6,6 @@ data class Product(
     val price: Double,
     val category: String,
     val stock: Int,
-    val colorHex: Long = 0xFF007AFF // Color por defecto si no hay imagen
+    val colorHex: Long = 0xFF007AFF,
+    val barcode: String? = null
 )

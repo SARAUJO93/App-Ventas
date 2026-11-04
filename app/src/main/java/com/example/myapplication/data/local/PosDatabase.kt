@@ -14,7 +14,7 @@ import androidx.room.RoomDatabase
         CashShiftEntity::class,
         EmployeeEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class PosDatabase : RoomDatabase() {

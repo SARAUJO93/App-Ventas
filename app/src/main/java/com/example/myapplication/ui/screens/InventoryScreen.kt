@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,10 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Product
-import com.example.myapplication.viewmodel.PosViewModel
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleRed
+import com.example.myapplication.viewmodel.PosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,16 +142,17 @@ fun InventoryScreen(viewModel: PosViewModel) {
             product = productToEdit,
             categories = categories.filter { it != "Todos" },
             onDismiss = { showProductSheet = false },
-            onSave = { name, price, category, stock, colorHex ->
+            onSave = { name, price, category, stock, colorHex, barcode ->
                 if (productToEdit == null) {
-                    viewModel.addProduct(name, price, category, stock, colorHex)
+                    viewModel.addProduct(name, price, category, stock, colorHex, barcode)
                 } else {
                     val updated = productToEdit!!.copy(
                         name = name,
                         price = price,
                         category = category,
                         stock = stock,
-                        colorHex = colorHex
+                        colorHex = colorHex,
+                        barcode = barcode
                     )
                     viewModel.updateProduct(updated)
                 }
@@ -209,7 +211,7 @@ fun InventoryCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "${product.category} • $${String.format("%.2f", product.price)}",
+                    text = "${product.category} • $${String.format("%.2f", product.price)}${if (product.barcode != null) " • " + product.barcode else ""}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -258,12 +260,15 @@ fun AddEditProductSheet(
     product: Product?,
     categories: List<String>,
     onDismiss: () -> Unit,
-    onSave: (name: String, price: Double, category: String, stock: Int, colorHex: Long) -> Unit
+    onSave: (name: String, price: Double, category: String, stock: Int, colorHex: Long, barcode: String?) -> Unit
 ) {
     var name by remember { mutableStateOf(product?.name ?: "") }
     var priceText by remember { mutableStateOf(product?.price?.toString() ?: "") }
     var stockText by remember { mutableStateOf(product?.stock?.toString() ?: "") }
+    var barcodeText by remember { mutableStateOf(product?.barcode ?: "") }
     var selectedCategory by remember { mutableStateOf(product?.category ?: categories.firstOrNull() ?: "General") }
+
+    var showCameraScanner by remember { mutableStateOf(false) }
 
     val colorOptions = listOf(
         0xFF8D6E63, // Cafe
@@ -332,6 +337,19 @@ fun AddEditProductSheet(
                 )
             }
 
+            OutlinedTextField(
+                value = barcodeText,
+                onValueChange = { barcodeText = it },
+                label = { Text("Código de Barras / SKU") },
+                trailingIcon = {
+                    IconButton(onClick = { showCameraScanner = true }) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear Cámara")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
             Text("Categoría", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(categories) { category ->
@@ -375,11 +393,21 @@ fun AddEditProductSheet(
                         price == null || price <= 0 -> errorMessage = "Ingresa un precio válido mayor a 0"
                         stock == null || stock < 0 -> errorMessage = "Ingresa un stock válido mayor o igual a 0"
                         else -> {
-                            onSave(name.trim(), price, selectedCategory, stock, selectedColorHex)
+                            onSave(name.trim(), price, selectedCategory, stock, selectedColorHex, barcodeText.trim().ifEmpty { null })
                         }
                     }
                 }
             )
         }
+    }
+
+    if (showCameraScanner) {
+        BarcodeScannerModal(
+            onDismiss = { showCameraScanner = false },
+            onBarcodeScanned = { barcode ->
+                barcodeText = barcode
+                showCameraScanner = false
+            }
+        )
     }
 }

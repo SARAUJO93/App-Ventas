@@ -18,6 +18,7 @@ interface PosRepository {
     fun getOrders(): Flow<List<Order>>
     fun getActiveShift(): Flow<CashShiftEntity?>
     fun getAllShifts(): Flow<List<CashShiftEntity>>
+    suspend fun getProductByBarcode(barcode: String): Product?
     suspend fun authenticatePin(pin: String): EmployeeEntity?
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
@@ -101,6 +102,10 @@ class PosRepositoryImpl @Inject constructor(
 
     override fun getAllShifts(): Flow<List<CashShiftEntity>> {
         return dao.getAllShifts()
+    }
+
+    override suspend fun getProductByBarcode(barcode: String): Product? {
+        return dao.getProductByBarcode(barcode)?.toDomain()
     }
 
     override suspend fun authenticatePin(pin: String): EmployeeEntity? {
@@ -303,12 +308,12 @@ class PosRepositoryImpl @Inject constructor(
         val existingProducts = dao.getAllProducts().first()
         if (existingProducts.isEmpty()) {
             val defaultProducts = listOf(
-                Product("1", "Café Americano", 35.0, "Bebidas", 50, 0xFF8D6E63).toEntity(),
-                Product("2", "Capuccino", 45.0, "Bebidas", 40, 0xFF8D6E63).toEntity(),
-                Product("3", "Croissant", 30.0, "Panadería", 20, 0xFFFFB74D).toEntity(),
-                Product("4", "Sándwich de Pavo", 75.0, "Alimentos", 15, 0xFF81C784).toEntity(),
-                Product("5", "Agua Mineral", 25.0, "Bebidas", 100, 0xFF4FC3F7).toEntity(),
-                Product("6", "Cheesecake", 55.0, "Postres", 10, 0xFFF06292).toEntity()
+                Product("1", "Café Americano", 35.0, "Bebidas", 50, 0xFF8D6E63, "7501234567890").toEntity(),
+                Product("2", "Capuccino", 45.0, "Bebidas", 40, 0xFF8D6E63, "7501234567891").toEntity(),
+                Product("3", "Croissant", 30.0, "Panadería", 20, 0xFFFFB74D, "7501234567892").toEntity(),
+                Product("4", "Sándwich de Pavo", 75.0, "Alimentos", 15, 0xFF81C784, "7501234567893").toEntity(),
+                Product("5", "Agua Mineral", 25.0, "Bebidas", 100, 0xFF4FC3F7, "7501234567894").toEntity(),
+                Product("6", "Cheesecake", 55.0, "Postres", 10, 0xFFF06292, "7501234567895").toEntity()
             )
             dao.insertProducts(defaultProducts)
         }
