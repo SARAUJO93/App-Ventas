@@ -25,6 +25,9 @@ class PosViewModel @Inject constructor(
     val customers: StateFlow<List<Customer>> = repository.getCustomers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val orders: StateFlow<List<Order>> = repository.getOrders()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
 
@@ -219,6 +222,7 @@ class PosViewModel @Inject constructor(
             customerName = customerObj?.name
         )
         viewModelScope.launch {
+            repository.saveOrder(newOrder)
             repository.deductStock(currentItems)
             if (method == PaymentMethod.CREDIT && customerId != null) {
                 repository.addCustomerDebt(customerId, totalToCharge)

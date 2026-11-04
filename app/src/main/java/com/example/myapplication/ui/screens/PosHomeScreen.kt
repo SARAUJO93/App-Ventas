@@ -1,9 +1,8 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PointOfSale
@@ -25,6 +24,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Tables : Screen("tables", "Mesas", Icons.Default.TableBar)
     object Customers : Screen("customers", "Clientes", Icons.Default.People)
     object Inventory : Screen("inventory", "Inventario", Icons.Default.Inventory)
+    object Reports : Screen("reports", "Reportes", Icons.Default.Assessment)
 }
 
 @Composable
@@ -36,7 +36,8 @@ fun PosHomeScreen() {
         Screen.Sales,
         Screen.Tables,
         Screen.Customers,
-        Screen.Inventory
+        Screen.Inventory,
+        Screen.Reports
     )
 
     Scaffold(
@@ -80,6 +81,7 @@ fun PosHomeScreen() {
             composable(Screen.Tables.route) { TablesScreen(viewModel) }
             composable(Screen.Customers.route) { CustomersScreen(viewModel) }
             composable(Screen.Inventory.route) { InventoryScreen(viewModel) }
+            composable(Screen.Reports.route) { ReportsScreen(viewModel) }
         }
     }
 }

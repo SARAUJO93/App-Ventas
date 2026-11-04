@@ -67,4 +67,16 @@ interface PosDao {
 
     @Query("DELETE FROM customers WHERE id = :id")
     suspend fun deleteCustomerById(id: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrder(order: OrderEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrderItems(items: List<OrderItemEntity>)
+
+    @Query("SELECT * FROM orders ORDER BY dateTimestamp DESC")
+    fun getAllOrders(): Flow<List<OrderEntity>>
+
+    @Query("SELECT * FROM order_items WHERE orderId = :orderId")
+    suspend fun getOrderItems(orderId: String): List<OrderItemEntity>
 }

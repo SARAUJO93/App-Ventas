@@ -5,6 +5,7 @@ import com.example.myapplication.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,6 +15,7 @@ interface PosRepository {
     fun getTables(): Flow<List<Table>>
     fun getCustomers(): Flow<List<Customer>>
     fun getTableItems(tableId: String): Flow<List<TableItemEntity>>
+    fun getOrders(): Flow<List<Order>>
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
     suspend fun deleteProduct(productId: String)
@@ -26,6 +28,7 @@ interface PosRepository {
     suspend fun deleteCustomer(customerId: String)
     suspend fun addCustomerDebt(customerId: String, amount: Double)
     suspend fun recordCustomerPayment(customerId: String, paymentAmount: Double)
+    suspend fun saveOrder(order: Order)
     suspend fun deductStock(cartItems: List<CartItem>)
     suspend fun populateInitialData()
 }
@@ -49,6 +52,71 @@ class PosRepositoryImpl @Inject constructor(
 
     override fun getTableItems(tableId: String): Flow<List<TableItemEntity>> {
         return dao.getTableItems(tableId)
+    }
+
+    override fun getOrders(): Flow<List<Order>> {
+        return dao.getAllOrders().map { orderEntities ->
+            orderEntities.map { entity ->
+                val itemEntities = dao.getOrderItems(entity.id)
+                val cartItems = itemEntities.map { item ->
+                    CartItem(
+                        product = Product(
+                            id = item.productId,
+                            name = item.productName,
+                            price = item.unitPrice,
+                            category = "Venta",
+                            stock = 999,
+                            colorHex = item.colorHex
+                        ),
+                        quantity = item.quantity
+                    )
+                }
+                Order(
+                    id = entity.id,
+                    items = cartItems,
+                    subtotal = entity.subtotal,
+                    discount = entity.discount,
+                    tax = entity.tax,
+                    tip = entity.tip,
+                    total = entity.total,
+                    status = OrderStatus.valueOf(entity.status),
+                    date = Date(entity.dateTimestamp),
+                    paymentMethod = entity.paymentMethod?.let { PaymentMethod.valueOf(it) },
+                    customerId = entity.customerId,
+                    customerName = entity.customerName
+                )
+            }
+        }
+    }
+
+    override suspend fun saveOrder(order: Order) {
+        val orderEntity = OrderEntity(
+            id = order.id,
+            subtotal = order.subtotal,
+            discount = order.discount,
+            tax = order.tax,
+            tip = order.tip,
+            total = order.total,
+            status = order.status.name,
+            dateTimestamp = order.date.time,
+            paymentMethod = order.paymentMethod?.name,
+            customerId = order.customerId,
+            customerName = order.customerName
+        )
+        dao.insertOrder(orderEntity)
+
+        val itemEntities = order.items.map { item ->
+            OrderItemEntity(
+                id = UUID.randomUUID().toString(),
+                orderId = order.id,
+                productId = item.product.id,
+                productName = item.product.name,
+                unitPrice = item.product.price,
+                quantity = item.quantity,
+                colorHex = item.product.colorHex
+            )
+        }
+        dao.insertOrderItems(itemEntities)
     }
 
     override suspend fun addProduct(product: Product) {

@@ -67,3 +67,29 @@ data class CustomerEntity(
 
 fun CustomerEntity.toDomain() = Customer(id, name, phone, email, debtBalance)
 fun Customer.toEntity() = CustomerEntity(id, name, phone, email, debtBalance)
+
+@Entity(tableName = "orders")
+data class OrderEntity(
+    @PrimaryKey val id: String,
+    val subtotal: Double,
+    val discount: Double,
+    val tax: Double,
+    val tip: Double,
+    val total: Double,
+    val status: String,
+    val dateTimestamp: Long,
+    val paymentMethod: String?,
+    val customerId: String?,
+    val customerName: String?
+)
+
+@Entity(tableName = "order_items")
+data class OrderItemEntity(
+    @PrimaryKey val id: String,
+    val orderId: String,
+    val productId: String,
+    val productName: String,
+    val unitPrice: Double,
+    val quantity: Int,
+    val colorHex: Long
+)
