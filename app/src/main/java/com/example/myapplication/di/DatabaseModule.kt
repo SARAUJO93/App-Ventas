@@ -4,10 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.myapplication.data.local.PosDao
 import com.example.myapplication.data.local.PosDatabase
-import com.example.myapplication.data.repository.BusinessSettingsRepository
-import com.example.myapplication.data.repository.BusinessSettingsRepositoryImpl
-import com.example.myapplication.data.repository.PosRepository
-import com.example.myapplication.data.repository.PosRepositoryImpl
+import com.example.myapplication.data.repository.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,5 +41,11 @@ object DatabaseModule {
     @Singleton
     fun provideBusinessSettingsRepository(@ApplicationContext context: Context): BusinessSettingsRepository {
         return BusinessSettingsRepositoryImpl(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUpdateRepository(@ApplicationContext context: Context): UpdateRepository {
+        return UpdateRepositoryImpl(context)
     }
 }

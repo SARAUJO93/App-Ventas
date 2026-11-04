@@ -1,5 +1,6 @@
 package com.example.myapplication.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.local.CashShiftEntity
@@ -8,17 +9,22 @@ import com.example.myapplication.data.local.TableItemEntity
 import com.example.myapplication.data.local.TransactionEntity
 import com.example.myapplication.data.repository.BusinessSettingsRepository
 import com.example.myapplication.data.repository.PosRepository
+import com.example.myapplication.data.repository.UpdateInfo
+import com.example.myapplication.data.repository.UpdateRepository
+import com.example.myapplication.data.repository.UpdateState
 import com.example.myapplication.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class PosViewModel @Inject constructor(
     private val repository: PosRepository,
-    private val settingsRepository: BusinessSettingsRepository
+    private val settingsRepository: BusinessSettingsRepository,
+    private val updateRepository: UpdateRepository
 ) : ViewModel() {
 
     val products: StateFlow<List<Product>> = repository.getProducts()
@@ -40,6 +46,9 @@ class PosViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val businessSettings: StateFlow<BusinessSettings> = settingsRepository.settings
+
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
     private val _currentEmployee = MutableStateFlow<EmployeeEntity?>(null)
     val currentEmployee: StateFlow<EmployeeEntity?> = _currentEmployee.asStateFlow()
@@ -72,6 +81,41 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartTaxableAmount + cartTax + cartTip
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Checking
+            val currentVersion = "1.0.0"
+            val info = updateRepository.checkForUpdate(currentVersion)
+            if (info.isUpdateAvailable) {
+                _updateState.value = UpdateState.UpdateAvailable(info)
+            } else {
+                _updateState.value = UpdateState.NoUpdateAvailable
+            }
+        }
+    }
+
+    fun startUpdateDownload(info: UpdateInfo) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Downloading(0f)
+            val apk = updateRepository.downloadApk(info.downloadUrl) { progress ->
+                _updateState.value = UpdateState.Downloading(progress)
+            }
+            if (apk != null) {
+                _updateState.value = UpdateState.ReadyToInstall(apk)
+            } else {
+                _updateState.value = UpdateState.Error("Error al descargar el archivo de actualización.")
+            }
+        }
+    }
+
+    fun installApk(context: Context, apkFile: File) {
+        updateRepository.triggerApkInstallation(context, apkFile)
+    }
+
+    fun resetUpdateState() {
+        _updateState.value = UpdateState.Idle
+    }
 
     fun loginWithPin(pin: String, onSuccess: () -> Unit, onError: () -> Unit) {
         viewModelScope.launch {

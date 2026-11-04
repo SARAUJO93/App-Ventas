@@ -1,14 +1,13 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +40,7 @@ fun SettingsScreen(
     var printerName by remember { mutableStateOf(currentSettings.printerName) }
 
     var isSavedSuccess by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -194,6 +194,37 @@ fun SettingsScreen(
                         )
                     }
                 }
+
+                // Sección 3: Sistema y Actualizaciones OTA
+                item {
+                    AppleCard {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Acerca de Nova POS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+
+                        Text("Versión instalada: v1.0.0 (Build 1)", style = MaterialTheme.typography.bodyMedium)
+                        Text("Base de Datos Room v7 • Hilt DI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.checkForUpdates()
+                                showUpdateDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Buscar Actualizaciones OTA")
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -218,5 +249,12 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showUpdateDialog) {
+        UpdateDialog(
+            viewModel = viewModel,
+            onDismiss = { showUpdateDialog = false }
+        )
     }
 }
