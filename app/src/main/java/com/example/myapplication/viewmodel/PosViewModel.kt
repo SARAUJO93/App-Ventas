@@ -143,21 +143,56 @@ class PosViewModel @Inject constructor(
         }
     }
 
-    fun processCheckout(method: PaymentMethod): Order {
+    fun addCustomer(name: String, phone: String, email: String, initialDebt: Double) {
+        viewModelScope.launch {
+            val customer = Customer(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                phone = phone,
+                email = email,
+                debtBalance = initialDebt
+            )
+            repository.addCustomer(customer)
+        }
+    }
+
+    fun updateCustomer(customer: Customer) {
+        viewModelScope.launch {
+            repository.updateCustomer(customer)
+        }
+    }
+
+    fun deleteCustomer(customerId: String) {
+        viewModelScope.launch {
+            repository.deleteCustomer(customerId)
+        }
+    }
+
+    fun recordCustomerPayment(customerId: String, paymentAmount: Double) {
+        viewModelScope.launch {
+            repository.recordCustomerPayment(customerId, paymentAmount)
+        }
+    }
+
+    fun processCheckout(method: PaymentMethod, customerId: String? = null): Order {
         val currentItems = _cartItems.value.toList()
         val tableIdToClear = activeCheckoutTableId
+        val totalToCharge = cartTotal
 
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
             items = currentItems,
             subtotal = cartSubtotal,
             tax = cartTax,
-            total = cartTotal,
+            total = totalToCharge,
             status = OrderStatus.COMPLETED,
             paymentMethod = method
         )
         viewModelScope.launch {
             repository.deductStock(currentItems)
+            if (method == PaymentMethod.CREDIT && customerId != null) {
+                repository.addCustomerDebt(customerId, totalToCharge)
+            }
             if (tableIdToClear != null) {
                 repository.clearTableOrder(tableIdToClear)
             }

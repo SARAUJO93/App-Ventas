@@ -21,6 +21,11 @@ interface PosRepository {
     suspend fun addItemToTable(tableId: String, product: Product, quantity: Int = 1)
     suspend fun removeItemFromTable(tableId: String, productId: String)
     suspend fun clearTableOrder(tableId: String)
+    suspend fun addCustomer(customer: Customer)
+    suspend fun updateCustomer(customer: Customer)
+    suspend fun deleteCustomer(customerId: String)
+    suspend fun addCustomerDebt(customerId: String, amount: Double)
+    suspend fun recordCustomerPayment(customerId: String, paymentAmount: Double)
     suspend fun deductStock(cartItems: List<CartItem>)
     suspend fun populateInitialData()
 }
@@ -100,6 +105,33 @@ class PosRepositoryImpl @Inject constructor(
         val currentTable = tables.find { it.id == tableId }
         if (currentTable != null) {
             dao.updateTable(currentTable.copy(currentOrderTotal = 0.0, status = TableStatus.AVAILABLE.name))
+        }
+    }
+
+    override suspend fun addCustomer(customer: Customer) {
+        dao.insertCustomer(customer.toEntity())
+    }
+
+    override suspend fun updateCustomer(customer: Customer) {
+        dao.updateCustomer(customer.toEntity())
+    }
+
+    override suspend fun deleteCustomer(customerId: String) {
+        dao.deleteCustomerById(customerId)
+    }
+
+    override suspend fun addCustomerDebt(customerId: String, amount: Double) {
+        val customer = dao.getCustomerById(customerId)
+        if (customer != null) {
+            dao.updateCustomer(customer.copy(debtBalance = customer.debtBalance + amount))
+        }
+    }
+
+    override suspend fun recordCustomerPayment(customerId: String, paymentAmount: Double) {
+        val customer = dao.getCustomerById(customerId)
+        if (customer != null) {
+            val newDebt = (customer.debtBalance - paymentAmount).coerceAtLeast(0.0)
+            dao.updateCustomer(customer.copy(debtBalance = newDebt))
         }
     }
 

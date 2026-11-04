@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.CartItem
+import com.example.myapplication.model.Customer
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
 import com.example.myapplication.ui.components.AppleButton
@@ -155,13 +156,18 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutView(
     viewModel: PosViewModel,
     onBack: () -> Unit,
     onComplete: (Order) -> Unit
 ) {
+    val customers by viewModel.customers.collectAsState()
     var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
+    var selectedCustomer by remember { mutableStateOf<Customer?>(null) }
+    var expandedCustomerDropdown by remember { mutableStateOf(false) }
+
     var isDone by remember { mutableStateOf(false) }
     var processedOrder by remember { mutableStateOf<Order?>(null) }
 
@@ -184,7 +190,7 @@ fun CheckoutView(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             val methods = listOf(
                 PaymentMethod.CASH to "Efectivo",
@@ -196,10 +202,17 @@ fun CheckoutView(
             methods.forEach { (method, name) ->
                 val isSelected = selectedMethod == method
                 Card(
-                    onClick = { selectedMethod = method },
+                    onClick = {
+                        selectedMethod = method
+                        if (method != PaymentMethod.CREDIT) {
+                            selectedCustomer = null
+                        } else if (customers.isNotEmpty() && selectedCustomer == null) {
+                            selectedCustomer = customers.first()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = 4.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
                     ),
@@ -214,15 +227,54 @@ fun CheckoutView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            if (selectedMethod == PaymentMethod.CREDIT) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Asignar Venta a Cliente", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = expandedCustomerDropdown,
+                    onExpandedChange = { expandedCustomerDropdown = !expandedCustomerDropdown }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCustomer?.name ?: "Seleccionar Cliente",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCustomerDropdown) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedCustomerDropdown,
+                        onDismissRequest = { expandedCustomerDropdown = false }
+                    ) {
+                        customers.forEach { customer ->
+                            DropdownMenuItem(
+                                text = { Text("${customer.name} (Deuda: \$${String.format(Locale.getDefault(), "%.2f", customer.debtBalance)})") },
+                                onClick = {
+                                    selectedCustomer = customer
+                                    expandedCustomerDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val canConfirm = selectedMethod != null && (selectedMethod != PaymentMethod.CREDIT || selectedCustomer != null)
 
             AppleButton(
                 text = "Confirmar Pago",
+                enabled = canConfirm,
                 onClick = {
-                    processedOrder = viewModel.processCheckout(selectedMethod ?: PaymentMethod.CASH)
+                    val method = selectedMethod ?: PaymentMethod.CASH
+                    processedOrder = viewModel.processCheckout(method, selectedCustomer?.id)
                     isDone = true
                 },
-                backgroundColor = if (selectedMethod != null) MaterialTheme.colorScheme.primary else Color.Gray
+                backgroundColor = if (canConfirm) MaterialTheme.colorScheme.primary else Color.Gray
             )
             Spacer(modifier = Modifier.height(32.dp))
         } else {

@@ -53,6 +53,18 @@ interface PosDao {
     @Query("SELECT * FROM customers")
     fun getAllCustomers(): Flow<List<CustomerEntity>>
 
+    @Query("SELECT * FROM customers WHERE id = :id")
+    suspend fun getCustomerById(id: String): CustomerEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomer(customer: CustomerEntity)
+
+    @Update
+    suspend fun updateCustomer(customer: CustomerEntity)
+
+    @Query("DELETE FROM customers WHERE id = :id")
+    suspend fun deleteCustomerById(id: String)
 }
