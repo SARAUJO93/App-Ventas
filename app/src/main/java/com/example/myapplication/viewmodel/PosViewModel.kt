@@ -6,6 +6,8 @@ import com.example.myapplication.data.repository.PosRepository
 import com.example.myapplication.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -59,16 +61,46 @@ class PosViewModel @Inject constructor(
         _cartItems.value = emptyList()
     }
 
+    fun addProduct(name: String, price: Double, category: String, stock: Int, colorHex: Long) {
+        viewModelScope.launch {
+            val newProduct = Product(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                price = price,
+                category = category,
+                stock = stock,
+                colorHex = colorHex
+            )
+            repository.addProduct(newProduct)
+        }
+    }
+
+    fun updateProduct(product: Product) {
+        viewModelScope.launch {
+            repository.updateProduct(product)
+        }
+    }
+
+    fun deleteProduct(productId: String) {
+        viewModelScope.launch {
+            repository.deleteProduct(productId)
+        }
+    }
+
     fun processCheckout(method: PaymentMethod): Order {
+        val currentItems = _cartItems.value.toList()
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
-            items = _cartItems.value.toList(),
+            items = currentItems,
             subtotal = cartSubtotal,
             tax = cartTax,
             total = cartTotal,
             status = OrderStatus.COMPLETED,
             paymentMethod = method
         )
+        viewModelScope.launch {
+            repository.deductStock(currentItems)
+        }
         clearCart()
         return newOrder
     }
