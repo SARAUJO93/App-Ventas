@@ -3,10 +3,10 @@ package com.example.myapplication.data.repository
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -45,9 +45,11 @@ class UpdateRepositoryImpl @Inject constructor(
 
     override suspend fun checkForUpdate(currentVersionName: String): UpdateInfo = withContext(Dispatchers.IO) {
         try {
+            // Intentar primero endpoint de releases/latest
             val url = URL("https://api.github.com/repos/SARAUJO93/App-Ventas/releases/latest")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "NovaPOS-App")
             connection.setRequestProperty("Accept", "application/vnd.github+json")
             connection.connectTimeout = 8000
             connection.readTimeout = 8000
@@ -56,9 +58,9 @@ class UpdateRepositoryImpl @Inject constructor(
                 val responseText = connection.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(responseText)
                 val tagName = json.optString("tag_name", "v1.0.0").replace("v", "")
-                val notes = json.optString("body", "Mejoras de rendimiento y corrección de errores.")
+                val notes = json.optString("body", "Mejoras de rendimiento y nuevas características.")
 
-                var apkUrl = "https://github.com/SARAUJO93/App-Ventas/releases/download/v1.0.0/app-debug.apk"
+                var apkUrl = "https://github.com/SARAUJO93/App-Ventas/releases/download/v$tagName/app-debug.apk"
                 val assets = json.optJSONArray("assets")
                 if (assets != null && assets.length() > 0) {
                     val assetObj = assets.getJSONObject(0)
@@ -73,10 +75,45 @@ class UpdateRepositoryImpl @Inject constructor(
                     isUpdateAvailable = isNewer
                 )
             } else {
-                UpdateInfo("v1.0.0", "", "No se encontraron nuevas versiones", false)
+                // Fallback a consultar las etiquetas (tags)
+                checkForTagUpdate(currentVersionName)
             }
         } catch (e: Exception) {
-            UpdateInfo("v1.0.0", "", "Error de conexión con GitHub", false)
+            checkForTagUpdate(currentVersionName)
+        }
+    }
+
+    private fun checkForTagUpdate(currentVersionName: String): UpdateInfo {
+        return try {
+            val tagsUrl = URL("https://api.github.com/repos/SARAUJO93/App-Ventas/tags")
+            val conn = tagsUrl.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "NovaPOS-App")
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+
+            if (conn.responseCode == 200) {
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
+                val array = JSONArray(responseText)
+                if (array.length() > 0) {
+                    val latestTagObj = array.getJSONObject(0)
+                    val tagName = latestTagObj.optString("name", "v1.0.0").replace("v", "")
+                    val isNewer = isVersionNewer(tagName, currentVersionName)
+                    val downloadUrl = "https://github.com/SARAUJO93/App-Ventas/releases/download/v$tagName/app-debug.apk"
+                    UpdateInfo(
+                        latestVersion = tagName,
+                        downloadUrl = downloadUrl,
+                        releaseNotes = "Nueva versión v$tagName con mejoras y correcciones.",
+                        isUpdateAvailable = isNewer
+                    )
+                } else {
+                    UpdateInfo(currentVersionName, "", "No hay etiquetas publicadas", false)
+                }
+            } else {
+                UpdateInfo(currentVersionName, "", "Error de servidor GitHub", false)
+            }
+        } catch (e: Exception) {
+            UpdateInfo(currentVersionName, "", "Error de red", false)
         }
     }
 
@@ -84,6 +121,7 @@ class UpdateRepositoryImpl @Inject constructor(
         try {
             val url = URL(downloadUrl)
             val connection = url.openConnection() as HttpURLConnection
+            connection.setRequestProperty("User-Agent", "NovaPOS-App")
             connection.connectTimeout = 10000
             connection.readTimeout = 30000
             connection.connect()
