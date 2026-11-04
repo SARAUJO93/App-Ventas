@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.BusinessSettings
 import com.example.myapplication.model.Order
+import com.example.myapplication.model.ServiceType
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
@@ -40,6 +41,11 @@ fun TicketReceiptModal(
     val settings = settingsState?.value ?: BusinessSettings()
 
     val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.date)
+    val serviceText = when (order.serviceType) {
+        ServiceType.DINE_IN -> "EN SITIO"
+        ServiceType.TAKE_AWAY -> "PARA LLEVAR"
+        ServiceType.DELIVERY -> "A DOMICILIO"
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -98,6 +104,10 @@ fun TicketReceiptModal(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Orden #:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
                             Text(order.id.takeLast(6), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Servicio:", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
+                            Text(serviceText, fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = Color.Black)
                         }
                         if (order.customerName != null) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -186,6 +196,7 @@ fun TicketReceiptModal(
                             appendLine("Tel: ${settings.phone}")
                             appendLine("Orden #: ${order.id.takeLast(6)}")
                             appendLine("Fecha: $formattedDate")
+                            appendLine("Servicio: $serviceText")
                             if (order.customerName != null) appendLine("Cliente: ${order.customerName}")
                             appendLine("--------------------------------")
                             order.items.forEach { item ->

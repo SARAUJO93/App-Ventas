@@ -53,6 +53,12 @@ class PosViewModel @Inject constructor(
     private val _currentEmployee = MutableStateFlow<EmployeeEntity?>(null)
     val currentEmployee: StateFlow<EmployeeEntity?> = _currentEmployee.asStateFlow()
 
+    private val _selectedServiceType = MutableStateFlow(ServiceType.DINE_IN)
+    val selectedServiceType: StateFlow<ServiceType> = _selectedServiceType.asStateFlow()
+
+    private val _selectedCartCustomer = MutableStateFlow<Customer?>(null)
+    val selectedCartCustomer: StateFlow<Customer?> = _selectedCartCustomer.asStateFlow()
+
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
 
@@ -81,6 +87,14 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartTaxableAmount + cartTax + cartTip
+
+    fun setServiceType(type: ServiceType) {
+        _selectedServiceType.value = type
+    }
+
+    fun setCartCustomer(customer: Customer?) {
+        _selectedCartCustomer.value = customer
+    }
 
     fun checkForUpdates() {
         viewModelScope.launch {
@@ -226,6 +240,8 @@ class PosViewModel @Inject constructor(
         _cartItems.value = emptyList()
         _tipPercent.value = 0.0
         _discountPercent.value = 0.0
+        _selectedServiceType.value = ServiceType.DINE_IN
+        _selectedCartCustomer.value = null
         activeCheckoutTableId = null
     }
 
@@ -350,7 +366,7 @@ class PosViewModel @Inject constructor(
         val currentItems = _cartItems.value.toList()
         val tableIdToClear = activeCheckoutTableId
         val totalToCharge = cartTotal
-        val customerObj = customers.value.find { it.id == customerId }
+        val customerObj = customers.value.find { it.id == customerId } ?: _selectedCartCustomer.value
 
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
@@ -362,15 +378,16 @@ class PosViewModel @Inject constructor(
             total = totalToCharge,
             status = OrderStatus.COMPLETED,
             paymentMethod = method,
-            customerId = customerId,
-            customerName = customerObj?.name
+            customerId = customerObj?.id,
+            customerName = customerObj?.name,
+            serviceType = _selectedServiceType.value
         )
         viewModelScope.launch {
             repository.saveOrder(newOrder)
             repository.deductStock(currentItems)
             repository.recordSaleInActiveShift(totalToCharge, method)
-            if (method == PaymentMethod.CREDIT && customerId != null) {
-                repository.addCustomerDebt(customerId, totalToCharge)
+            if (method == PaymentMethod.CREDIT && customerObj != null) {
+                repository.addCustomerDebt(customerObj.id, totalToCharge)
             }
             if (tableIdToClear != null) {
                 repository.clearTableOrder(tableIdToClear)

@@ -92,7 +92,8 @@ class PosRepositoryImpl @Inject constructor(
                     date = Date(entity.dateTimestamp),
                     paymentMethod = entity.paymentMethod?.let { PaymentMethod.valueOf(it) },
                     customerId = entity.customerId,
-                    customerName = entity.customerName
+                    customerName = entity.customerName,
+                    serviceType = try { ServiceType.valueOf(entity.serviceType) } catch (e: Exception) { ServiceType.DINE_IN }
                 )
             }
         }
@@ -195,7 +196,8 @@ class PosRepositoryImpl @Inject constructor(
             dateTimestamp = order.date.time,
             paymentMethod = order.paymentMethod?.name,
             customerId = order.customerId,
-            customerName = order.customerName
+            customerName = order.customerName,
+            serviceType = order.serviceType.name
         )
         dao.insertOrder(orderEntity)
 

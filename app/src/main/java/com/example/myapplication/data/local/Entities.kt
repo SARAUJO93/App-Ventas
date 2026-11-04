@@ -176,7 +176,8 @@ data class OrderEntity(
     val dateTimestamp: Long,
     val paymentMethod: String?,
     val customerId: String?,
-    val customerName: String?
+    val customerName: String?,
+    val serviceType: String = "DINE_IN"
 )
 
 @Entity(tableName = "order_items")

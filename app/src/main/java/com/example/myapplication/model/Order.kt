@@ -10,6 +10,10 @@ enum class PaymentMethod {
     CASH, CARD, TRANSFER, CREDIT
 }
 
+enum class ServiceType {
+    DINE_IN, TAKE_AWAY, DELIVERY
+}
+
 data class Order(
     val id: String,
     val items: List<CartItem>,
@@ -22,5 +26,6 @@ data class Order(
     val date: Date = Date(),
     val paymentMethod: PaymentMethod? = null,
     val customerId: String? = null,
-    val customerName: String? = null
+    val customerName: String? = null,
+    val serviceType: ServiceType = ServiceType.DINE_IN
 )

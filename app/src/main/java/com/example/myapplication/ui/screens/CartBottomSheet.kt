@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +24,7 @@ import com.example.myapplication.model.CartItem
 import com.example.myapplication.model.Customer
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.PaymentMethod
+import com.example.myapplication.model.ServiceType
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.viewmodel.PosViewModel
@@ -37,8 +40,12 @@ fun CartBottomSheet(
     val cartItems by viewModel.cartItems.collectAsState()
     val selectedTipPercent by viewModel.tipPercent.collectAsState()
     val selectedDiscountPercent by viewModel.discountPercent.collectAsState()
+    val selectedServiceType by viewModel.selectedServiceType.collectAsState()
+    val selectedCartCustomer by viewModel.selectedCartCustomer.collectAsState()
+    val customers by viewModel.customers.collectAsState()
 
     var showCheckout by remember { mutableStateOf(false) }
+    var showCustomerDialog by remember { mutableStateOf(false) }
     var completedOrder by remember { mutableStateOf<Order?>(null) }
 
     if (completedOrder != null) {
@@ -78,6 +85,44 @@ fun CartBottomSheet(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Selector de Modalidad de Servicio (En Sitio / Para Llevar / A Domicilio)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val serviceTypes = listOf(
+                        ServiceType.DINE_IN to "En sitio",
+                        ServiceType.TAKE_AWAY to "Para llevar",
+                        ServiceType.DELIVERY to "A domicilio"
+                    )
+                    serviceTypes.forEach { (type, label) ->
+                        FilterChip(
+                            selected = selectedServiceType == type,
+                            onClick = { viewModel.setServiceType(type) },
+                            label = { Text(label) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Botón de Asignación de Cliente en la Cabecera del Carrito
+                OutlinedButton(
+                    onClick = { showCustomerDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = if (selectedCartCustomer == null) Icons.Default.PersonAdd else Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = selectedCartCustomer?.let { "Cliente: ${it.name}" } ?: "👤 + Asignar cliente al pedido",
+                        fontWeight = if (selectedCartCustomer != null) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -168,6 +213,47 @@ fun CartBottomSheet(
             }
         }
     }
+
+    if (showCustomerDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomerDialog = false },
+            title = { Text("Asignar Cliente al Pedido") },
+            text = {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        TextButton(
+                            onClick = {
+                                viewModel.setCartCustomer(null)
+                                showCustomerDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ninguno (Público General)")
+                        }
+                    }
+                    items(customers) { customer ->
+                        Card(
+                            onClick = {
+                                viewModel.setCartCustomer(customer)
+                                showCustomerDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(customer.name, fontWeight = FontWeight.Bold)
+                                Text("Tel: ${customer.phone}", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCustomerDialog = false }) {
+                    Text("Cerrar")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -220,8 +306,10 @@ fun CheckoutView(
     onComplete: (Order) -> Unit
 ) {
     val customers by viewModel.customers.collectAsState()
+    val selectedCartCustomer by viewModel.selectedCartCustomer.collectAsState()
+
     var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
-    var selectedCustomer by remember { mutableStateOf<Customer?>(null) }
+    var selectedCustomer by remember { mutableStateOf<Customer?>(selectedCartCustomer) }
     var expandedCustomerDropdown by remember { mutableStateOf(false) }
 
     var isDone by remember { mutableStateOf(false) }
@@ -261,9 +349,11 @@ fun CheckoutView(
                     onClick = {
                         selectedMethod = method
                         if (method != PaymentMethod.CREDIT) {
-                            selectedCustomer = null
+                            if (selectedCartCustomer != null) {
+                                selectedCustomer = selectedCartCustomer
+                            }
                         } else if (customers.isNotEmpty() && selectedCustomer == null) {
-                            selectedCustomer = customers.first()
+                            selectedCustomer = selectedCartCustomer ?: customers.first()
                         }
                     },
                     modifier = Modifier
