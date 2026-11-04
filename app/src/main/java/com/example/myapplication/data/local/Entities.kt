@@ -45,6 +45,17 @@ fun Table.toEntity() = TableEntity(
     occupancyTimeMinutes = occupancyTimeMinutes
 )
 
+@Entity(tableName = "table_items")
+data class TableItemEntity(
+    @PrimaryKey val id: String,
+    val tableId: String,
+    val productId: String,
+    val productName: String,
+    val unitPrice: Double,
+    val quantity: Int,
+    val colorHex: Long
+)
+
 @Entity(tableName = "customers")
 data class CustomerEntity(
     @PrimaryKey val id: String,

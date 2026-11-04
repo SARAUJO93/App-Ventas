@@ -29,6 +29,27 @@ interface PosDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTables(tables: List<TableEntity>)
 
+    @Update
+    suspend fun updateTable(table: TableEntity)
+
+    @Query("SELECT * FROM table_items WHERE tableId = :tableId")
+    fun getTableItems(tableId: String): Flow<List<TableItemEntity>>
+
+    @Query("SELECT * FROM table_items WHERE tableId = :tableId AND productId = :productId")
+    suspend fun getTableItem(tableId: String, productId: String): TableItemEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTableItem(item: TableItemEntity)
+
+    @Update
+    suspend fun updateTableItem(item: TableItemEntity)
+
+    @Query("DELETE FROM table_items WHERE tableId = :tableId")
+    suspend fun clearTableItems(tableId: String)
+
+    @Query("DELETE FROM table_items WHERE tableId = :tableId AND productId = :productId")
+    suspend fun deleteTableItem(tableId: String, productId: String)
+
     @Query("SELECT * FROM customers")
     fun getAllCustomers(): Flow<List<CustomerEntity>>
 

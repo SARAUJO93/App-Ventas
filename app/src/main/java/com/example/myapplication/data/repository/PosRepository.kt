@@ -5,6 +5,7 @@ import com.example.myapplication.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,9 +13,14 @@ interface PosRepository {
     fun getProducts(): Flow<List<Product>>
     fun getTables(): Flow<List<Table>>
     fun getCustomers(): Flow<List<Customer>>
+    fun getTableItems(tableId: String): Flow<List<TableItemEntity>>
     suspend fun addProduct(product: Product)
     suspend fun updateProduct(product: Product)
     suspend fun deleteProduct(productId: String)
+    suspend fun updateTable(table: Table)
+    suspend fun addItemToTable(tableId: String, product: Product, quantity: Int = 1)
+    suspend fun removeItemFromTable(tableId: String, productId: String)
+    suspend fun clearTableOrder(tableId: String)
     suspend fun deductStock(cartItems: List<CartItem>)
     suspend fun populateInitialData()
 }
@@ -36,6 +42,10 @@ class PosRepositoryImpl @Inject constructor(
         return dao.getAllCustomers().map { entities -> entities.map { it.toDomain() } }
     }
 
+    override fun getTableItems(tableId: String): Flow<List<TableItemEntity>> {
+        return dao.getTableItems(tableId)
+    }
+
     override suspend fun addProduct(product: Product) {
         dao.insertProduct(product.toEntity())
     }
@@ -46,6 +56,64 @@ class PosRepositoryImpl @Inject constructor(
 
     override suspend fun deleteProduct(productId: String) {
         dao.deleteProductById(productId)
+    }
+
+    override suspend fun updateTable(table: Table) {
+        dao.updateTable(table.toEntity())
+    }
+
+    override suspend fun addItemToTable(tableId: String, product: Product, quantity: Int) {
+        val existing = dao.getTableItem(tableId, product.id)
+        if (existing != null) {
+            val newQty = existing.quantity + quantity
+            dao.updateTableItem(existing.copy(quantity = newQty))
+        } else {
+            val newItem = TableItemEntity(
+                id = UUID.randomUUID().toString(),
+                tableId = tableId,
+                productId = product.id,
+                productName = product.name,
+                unitPrice = product.price,
+                quantity = quantity,
+                colorHex = product.colorHex
+            )
+            dao.insertTableItem(newItem)
+        }
+        recalculateTableTotal(tableId)
+    }
+
+    override suspend fun removeItemFromTable(tableId: String, productId: String) {
+        val existing = dao.getTableItem(tableId, productId)
+        if (existing != null) {
+            if (existing.quantity > 1) {
+                dao.updateTableItem(existing.copy(quantity = existing.quantity - 1))
+            } else {
+                dao.deleteTableItem(tableId, productId)
+            }
+        }
+        recalculateTableTotal(tableId)
+    }
+
+    override suspend fun clearTableOrder(tableId: String) {
+        dao.clearTableItems(tableId)
+        val tables = dao.getAllTables().first()
+        val currentTable = tables.find { it.id == tableId }
+        if (currentTable != null) {
+            dao.updateTable(currentTable.copy(currentOrderTotal = 0.0, status = TableStatus.AVAILABLE.name))
+        }
+    }
+
+    private suspend fun recalculateTableTotal(tableId: String) {
+        val items = dao.getTableItems(tableId).first()
+        val total = items.sumOf { it.unitPrice * it.quantity }
+        val tables = dao.getAllTables().first()
+        val currentTable = tables.find { it.id == tableId }
+        if (currentTable != null) {
+            val newStatus = if (total > 0 && currentTable.status == TableStatus.AVAILABLE.name) {
+                TableStatus.OCCUPIED.name
+            } else currentTable.status
+            dao.updateTable(currentTable.copy(currentOrderTotal = total, status = newStatus))
+        }
     }
 
     override suspend fun deductStock(cartItems: List<CartItem>) {

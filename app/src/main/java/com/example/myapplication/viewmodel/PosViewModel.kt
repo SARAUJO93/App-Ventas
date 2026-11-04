@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.data.local.TableItemEntity
 import com.example.myapplication.data.repository.PosRepository
 import com.example.myapplication.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +28,8 @@ class PosViewModel @Inject constructor(
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems = _cartItems.asStateFlow()
 
+    private var activeCheckoutTableId: String? = null
+
     val cartSubtotal: Double
         get() = _cartItems.value.sumOf { it.total }
 
@@ -35,6 +38,10 @@ class PosViewModel @Inject constructor(
 
     val cartTotal: Double
         get() = cartSubtotal + cartTax
+
+    fun getTableItems(tableId: String): Flow<List<TableItemEntity>> {
+        return repository.getTableItems(tableId)
+    }
 
     fun addToCart(product: Product) {
         _cartItems.update { current ->
@@ -59,6 +66,7 @@ class PosViewModel @Inject constructor(
 
     fun clearCart() {
         _cartItems.value = emptyList()
+        activeCheckoutTableId = null
     }
 
     fun addProduct(name: String, price: Double, category: String, stock: Int, colorHex: Long) {
@@ -87,8 +95,58 @@ class PosViewModel @Inject constructor(
         }
     }
 
+    fun updateTableStatus(table: Table, newStatus: TableStatus) {
+        viewModelScope.launch {
+            repository.updateTable(table.copy(status = newStatus))
+        }
+    }
+
+    fun addItemToTable(tableId: String, product: Product) {
+        viewModelScope.launch {
+            repository.addItemToTable(tableId, product)
+        }
+    }
+
+    fun removeItemFromTable(tableId: String, productId: String) {
+        viewModelScope.launch {
+            repository.removeItemFromTable(tableId, productId)
+        }
+    }
+
+    fun clearTableOrder(tableId: String) {
+        viewModelScope.launch {
+            repository.clearTableOrder(tableId)
+        }
+    }
+
+    fun transferTableOrderToCart(tableId: String, onTransferred: () -> Unit) {
+        viewModelScope.launch {
+            val items = repository.getTableItems(tableId).first()
+            if (items.isNotEmpty()) {
+                val converted = items.map { item ->
+                    CartItem(
+                        product = Product(
+                            id = item.productId,
+                            name = item.productName,
+                            price = item.unitPrice,
+                            category = "Mesa",
+                            stock = 999,
+                            colorHex = item.colorHex
+                        ),
+                        quantity = item.quantity
+                    )
+                }
+                _cartItems.value = converted
+                activeCheckoutTableId = tableId
+                onTransferred()
+            }
+        }
+    }
+
     fun processCheckout(method: PaymentMethod): Order {
         val currentItems = _cartItems.value.toList()
+        val tableIdToClear = activeCheckoutTableId
+
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
             items = currentItems,
@@ -100,6 +158,9 @@ class PosViewModel @Inject constructor(
         )
         viewModelScope.launch {
             repository.deductStock(currentItems)
+            if (tableIdToClear != null) {
+                repository.clearTableOrder(tableIdToClear)
+            }
         }
         clearCart()
         return newOrder
