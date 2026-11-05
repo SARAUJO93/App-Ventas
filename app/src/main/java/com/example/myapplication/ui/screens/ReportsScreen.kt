@@ -34,16 +34,18 @@ import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleOrange
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportsScreen(viewModel: PosViewModel) {
-    val orders by viewModel.orders.collectAsState()
-    val activeShift by viewModel.activeShift.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
+fun ReportsScreen(
+    ordersViewModel: com.example.myapplication.viewmodel.OrdersAndReportsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    shiftViewModel: com.example.myapplication.viewmodel.ShiftViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+) {
+    val orders by ordersViewModel.orders.collectAsState()
+    val activeShift by shiftViewModel.activeShift.collectAsState()
+    val transactions by shiftViewModel.transactions.collectAsState()
 
     var selectedOrderForReceipt by remember { mutableStateOf<Order?>(null) }
     var showShiftModal by remember { mutableStateOf(false) }
@@ -396,7 +398,7 @@ fun ReportsScreen(viewModel: PosViewModel) {
             type = transactionTypeToAdd,
             onDismiss = { showTransactionSheet = false },
             onConfirm = { type, amount, category, note ->
-                viewModel.addTransaction(type, amount, category, note)
+                shiftViewModel.addTransaction(type, amount, category, note)
                 showTransactionSheet = false
             }
         )
@@ -404,7 +406,6 @@ fun ReportsScreen(viewModel: PosViewModel) {
 
     if (showShiftModal) {
         CashShiftModal(
-            viewModel = viewModel,
             onDismiss = { showShiftModal = false }
         )
     }
@@ -412,7 +413,6 @@ fun ReportsScreen(viewModel: PosViewModel) {
     if (selectedOrderForReceipt != null) {
         TicketReceiptModal(
             order = selectedOrderForReceipt!!,
-            viewModel = viewModel,
             onDismiss = { selectedOrderForReceipt = null }
         )
     }

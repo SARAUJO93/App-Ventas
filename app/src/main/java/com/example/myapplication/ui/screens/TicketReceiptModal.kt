@@ -22,12 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.BusinessSettings
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.ServiceType
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.util.PdfReceiptGenerator
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -35,12 +36,12 @@ import java.util.Locale
 @Composable
 fun TicketReceiptModal(
     order: Order,
-    viewModel: PosViewModel? = null,
+    settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val settingsState = viewModel?.businessSettings?.collectAsState()
-    val settings = settingsState?.value ?: BusinessSettings()
+    val settingsState = settingsViewModel.businessSettings.collectAsState()
+    val settings = settingsState.value
 
     val formattedDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.date)
     val serviceText = when (order.serviceType) {

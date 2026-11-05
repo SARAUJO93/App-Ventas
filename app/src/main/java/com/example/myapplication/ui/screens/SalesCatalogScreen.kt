@@ -20,17 +20,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.Product
 import com.example.myapplication.ui.components.AppleSegmentedControl
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.CartViewModel
+import com.example.myapplication.viewmodel.InventoryViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SalesCatalogScreen(viewModel: PosViewModel) {
-    val products by viewModel.products.collectAsState()
-    val cartItems by viewModel.cartItems.collectAsState()
+fun SalesCatalogScreen(
+    inventoryViewModel: InventoryViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel()
+) {
+    val products by inventoryViewModel.products.collectAsState()
+    val cartItems by cartViewModel.cartItems.collectAsState()
     val context = LocalContext.current
 
     val categories = listOf("Todos", "Bebidas", "Alimentos", "Postres", "Panadería")
@@ -57,7 +62,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito") },
                     text = {
                         Text(
-                            text = "${cartItems.sumOf { it.quantity }} items • \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
+                            text = "${cartItems.sumOf { it.quantity }} items • \$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}",
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -120,7 +125,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
                             if (product.variants.isNotEmpty() || product.modifiers.isNotEmpty()) {
                                 selectedProductForVariants = product
                             } else {
-                                viewModel.addToCart(product)
+                                cartViewModel.addToCart(product)
                             }
                         }
                     )
@@ -134,7 +139,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
             product = selectedProductForVariants!!,
             onDismiss = { selectedProductForVariants = null },
             onConfirm = { variant, modifiers ->
-                viewModel.addToCart(selectedProductForVariants!!, variant, modifiers)
+                cartViewModel.addToCart(selectedProductForVariants!!, variant, modifiers)
                 selectedProductForVariants = null
             }
         )
@@ -144,7 +149,7 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
         BarcodeScannerModal(
             onDismiss = { showBarcodeScanner = false },
             onBarcodeScanned = { barcode ->
-                viewModel.scanAndAddToCart(
+                cartViewModel.scanAndAddToCart(
                     barcode = barcode,
                     onFound = { product ->
                         Toast.makeText(context, "Agregado: ${product.name}", Toast.LENGTH_SHORT).show()
@@ -159,7 +164,6 @@ fun SalesCatalogScreen(viewModel: PosViewModel) {
 
     if (showCartSheet) {
         CartBottomSheet(
-            viewModel = viewModel,
             sheetState = sheetState,
             onDismiss = {
                 coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {

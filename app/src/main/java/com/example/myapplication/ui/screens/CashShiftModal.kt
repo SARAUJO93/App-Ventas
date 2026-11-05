@@ -25,17 +25,16 @@ import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashShiftModal(
-    viewModel: PosViewModel,
+    shiftViewModel: com.example.myapplication.viewmodel.ShiftViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onDismiss: () -> Unit
 ) {
-    val activeShift by viewModel.activeShift.collectAsState()
+    val activeShift by shiftViewModel.activeShift.collectAsState()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -49,7 +48,7 @@ fun CashShiftModal(
             if (activeShift == null) {
                 OpenShiftView(
                     onConfirmOpen = { cashier, initialCash ->
-                        viewModel.openShift(cashier, initialCash)
+                        shiftViewModel.openShift(cashier, initialCash)
                         onDismiss()
                     }
                 )
@@ -57,7 +56,7 @@ fun CashShiftModal(
                 CloseShiftView(
                     shift = activeShift!!,
                     onConfirmClose = { actualCash ->
-                        viewModel.closeShift(actualCash)
+                        shiftViewModel.closeShift(actualCash)
                         onDismiss()
                     }
                 )

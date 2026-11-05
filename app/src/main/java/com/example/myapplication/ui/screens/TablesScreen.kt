@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.data.local.TableItemEntity
 import com.example.myapplication.model.Product
 import com.example.myapplication.model.Table
@@ -33,14 +34,20 @@ import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleOrange
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.CartViewModel
+import com.example.myapplication.viewmodel.InventoryViewModel
+import com.example.myapplication.viewmodel.TablesViewModel
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TablesScreen(viewModel: PosViewModel) {
-    val tables by viewModel.tables.collectAsState()
-    val products by viewModel.products.collectAsState()
+fun TablesScreen(
+    tablesViewModel: TablesViewModel = hiltViewModel(),
+    inventoryViewModel: InventoryViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel()
+) {
+    val tables by tablesViewModel.tables.collectAsState()
+    val products by inventoryViewModel.products.collectAsState()
 
     var selectedTable by remember { mutableStateOf<Table?>(null) }
     var showComandaSheet by remember { mutableStateOf(false) }
@@ -92,33 +99,33 @@ fun TablesScreen(viewModel: PosViewModel) {
 
     if (showComandaSheet && selectedTable != null) {
         val currentTable = tables.find { it.id == selectedTable!!.id } ?: selectedTable!!
-        val tableItems by viewModel.getTableItems(currentTable.id).collectAsState(initial = emptyList())
+        val tableItems by tablesViewModel.getTableItems(currentTable.id).collectAsState(initial = emptyList())
 
         TableComandaBottomSheet(
             table = currentTable,
             items = tableItems,
             onDismiss = { showComandaSheet = false },
             onUpdateStatus = { newStatus ->
-                viewModel.updateTableStatus(currentTable, newStatus)
+                tablesViewModel.updateTableStatus(currentTable, newStatus)
             },
             onAddProductsClick = {
                 showAddProductsSheet = true
             },
             onRemoveItem = { productId ->
-                viewModel.removeItemFromTable(currentTable.id, productId)
+                tablesViewModel.removeItemFromTable(currentTable.id, productId)
             },
             onAddItem = { productId ->
                 val prod = products.find { it.id == productId }
                 if (prod != null) {
-                    viewModel.addItemToTable(currentTable.id, prod)
+                    tablesViewModel.addItemToTable(currentTable.id, prod)
                 }
             },
             onClearOrder = {
-                viewModel.clearTableOrder(currentTable.id)
+                tablesViewModel.clearTableOrder(currentTable.id)
                 showComandaSheet = false
             },
             onCheckoutClick = {
-                viewModel.transferTableOrderToCart(currentTable.id) {
+                cartViewModel.transferTableOrderToCart(currentTable.id) {
                     showComandaSheet = false
                     showCartSheetForCheckout = true
                 }
@@ -132,7 +139,7 @@ fun TablesScreen(viewModel: PosViewModel) {
             products = products,
             onDismiss = { showAddProductsSheet = false },
             onSelectProduct = { product ->
-                viewModel.addItemToTable(currentTable.id, product)
+                tablesViewModel.addItemToTable(currentTable.id, product)
             }
         )
     }
@@ -140,7 +147,6 @@ fun TablesScreen(viewModel: PosViewModel) {
     if (showCartSheetForCheckout) {
         val cartSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         CartBottomSheet(
-            viewModel = viewModel,
             sheetState = cartSheetState,
             onDismiss = { showCartSheetForCheckout = false }
         )

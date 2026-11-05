@@ -15,25 +15,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.data.repository.UpdateState
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateDialog(
-    viewModel: PosViewModel,
+    settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val updateState by viewModel.updateState.collectAsState()
+    val updateState by settingsViewModel.updateState.collectAsState()
 
     ModalBottomSheet(
         onDismissRequest = {
-            viewModel.resetUpdateState()
+            settingsViewModel.resetUpdateState()
             onDismiss()
         },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -69,7 +70,7 @@ fun UpdateDialog(
             when (val state = updateState) {
                 is UpdateState.Idle -> {
                     Text("Presiona para buscar actualizaciones en GitHub.")
-                    AppleButton("Buscar Ahora", onClick = { viewModel.checkForUpdates() })
+                    AppleButton("Buscar Ahora", onClick = { settingsViewModel.checkForUpdates() })
                 }
                 is UpdateState.Checking -> {
                     CircularProgressIndicator()
@@ -82,7 +83,7 @@ fun UpdateDialog(
                         fontWeight = FontWeight.SemiBold
                     )
                     AppleButton("Aceptar", onClick = {
-                        viewModel.resetUpdateState()
+                        settingsViewModel.resetUpdateState()
                         onDismiss()
                     })
                 }
@@ -100,7 +101,7 @@ fun UpdateDialog(
                     )
                     AppleButton(
                         text = "Descargar e Instalar",
-                        onClick = { viewModel.startUpdateDownload(state.info) }
+                        onClick = { settingsViewModel.startUpdateDownload(state.info) }
                     )
                 }
                 is UpdateState.Downloading -> {
@@ -124,15 +125,15 @@ fun UpdateDialog(
                         text = "Instalar Ahora",
                         backgroundColor = AppleGreen,
                         onClick = {
-                            viewModel.installApk(context, state.apkFile)
-                            viewModel.resetUpdateState()
+                            settingsViewModel.installApk(context, state.apkFile)
+                            settingsViewModel.resetUpdateState()
                             onDismiss()
                         }
                     )
                 }
                 is UpdateState.Error -> {
                     Text(text = state.message, color = AppleRed)
-                    AppleButton("Reintentar", onClick = { viewModel.checkForUpdates() })
+                    AppleButton("Reintentar", onClick = { settingsViewModel.checkForUpdates() })
                 }
             }
 

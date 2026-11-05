@@ -22,7 +22,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
+import com.example.myapplication.viewmodel.ShiftViewModel
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Sales : Screen("sales", "Ventas", Icons.Default.PointOfSale)
@@ -35,15 +36,17 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosHomeScreen() {
-    val viewModel: PosViewModel = hiltViewModel()
+    val shiftViewModel: ShiftViewModel = hiltViewModel()
+    val settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel()
+    
     val navController = rememberNavController()
-    val currentEmployee by viewModel.currentEmployee.collectAsState()
-    val businessSettings by viewModel.businessSettings.collectAsState()
+    val currentEmployee by shiftViewModel.currentEmployee.collectAsState()
+    val businessSettings by settingsViewModel.businessSettings.collectAsState()
 
     var showSettingsSheet by remember { mutableStateOf(false) }
 
     if (currentEmployee == null) {
-        PinLockScreen(viewModel = viewModel)
+        PinLockScreen()
         return
     }
 
@@ -92,7 +95,7 @@ fun PosHomeScreen() {
                             )
                         }
                     }
-                    IconButton(onClick = { viewModel.logoutEmployee() }) {
+                    IconButton(onClick = { shiftViewModel.logoutEmployee() }) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
                             contentDescription = "Cerrar Sesión",
@@ -141,17 +144,16 @@ fun PosHomeScreen() {
             startDestination = Screen.Sales.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Sales.route) { SalesCatalogScreen(viewModel) }
-            composable(Screen.Tables.route) { TablesScreen(viewModel) }
-            composable(Screen.Customers.route) { CustomersScreen(viewModel) }
-            composable(Screen.Inventory.route) { InventoryScreen(viewModel) }
-            composable(Screen.Reports.route) { ReportsScreen(viewModel) }
+            composable(Screen.Sales.route) { SalesCatalogScreen() }
+            composable(Screen.Tables.route) { TablesScreen() }
+            composable(Screen.Customers.route) { CustomersScreen() }
+            composable(Screen.Inventory.route) { InventoryScreen() }
+            composable(Screen.Reports.route) { ReportsScreen() }
         }
     }
 
     if (showSettingsSheet) {
         SettingsScreen(
-            viewModel = viewModel,
             onDismiss = { showSettingsSheet = false }
         )
     }

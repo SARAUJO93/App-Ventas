@@ -8,5 +8,7 @@ data class BusinessSettings(
     val footerNote: String = "¡GRACIAS POR SU COMPRA!",
     val autoPrintReceipt: Boolean = false,
     val paperSize: String = "58mm",
-    val printerName: String = "Impresora Térmica Bluetooth"
+    val printerName: String = "Impresora Térmica Bluetooth",
+    val isFirstLaunch: Boolean = true,
+    val businessSector: String = "General"
 )

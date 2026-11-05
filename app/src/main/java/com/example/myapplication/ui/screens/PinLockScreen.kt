@@ -22,18 +22,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
+import com.example.myapplication.viewmodel.ShiftViewModel
 
 @Composable
 fun PinLockScreen(
-    viewModel: PosViewModel
+    shiftViewModel: ShiftViewModel = hiltViewModel(),
+    settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel()
 ) {
     var enteredPin by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
-    val businessSettings by viewModel.businessSettings.collectAsState()
+    val businessSettings by settingsViewModel.businessSettings.collectAsState()
 
     fun handleKeyPress(digit: String) {
         if (enteredPin.length < 4) {
@@ -41,7 +44,7 @@ fun PinLockScreen(
             enteredPin = newPin
             errorMessage = ""
             if (newPin.length == 4) {
-                viewModel.loginWithPin(
+                shiftViewModel.loginWithPin(
                     pin = newPin,
                     onSuccess = {
                         enteredPin = ""

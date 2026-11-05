@@ -15,20 +15,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.BusinessSettings
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.components.AppleSegmentedControl
 import com.example.myapplication.ui.theme.AppleGreen
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: PosViewModel,
+    settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
     onDismiss: () -> Unit
 ) {
-    val currentSettings by viewModel.businessSettings.collectAsState()
+    val currentSettings by settingsViewModel.businessSettings.collectAsState()
 
     var businessName by remember { mutableStateOf(currentSettings.businessName) }
     var address by remember { mutableStateOf(currentSettings.address) }
@@ -214,7 +215,7 @@ fun SettingsScreen(
 
                         OutlinedButton(
                             onClick = {
-                                viewModel.checkForUpdates()
+                                settingsViewModel.checkForUpdates()
                                 showUpdateDialog = true
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -242,7 +243,7 @@ fun SettingsScreen(
                         paperSize = if (paperSizeIndex == 1) "80mm" else "58mm",
                         printerName = printerName.trim()
                     )
-                    viewModel.saveBusinessSettings(updatedSettings)
+                    settingsViewModel.saveBusinessSettings(updatedSettings)
                     isSavedSuccess = true
                 }
             )
@@ -253,7 +254,6 @@ fun SettingsScreen(
 
     if (showUpdateDialog) {
         UpdateDialog(
-            viewModel = viewModel,
             onDismiss = { showUpdateDialog = false }
         )
     }

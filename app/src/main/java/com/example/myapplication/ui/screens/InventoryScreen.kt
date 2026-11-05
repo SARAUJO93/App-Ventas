@@ -26,19 +26,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.Product
 import com.example.myapplication.model.ProductModifier
 import com.example.myapplication.model.ProductVariant
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.InventoryViewModel
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InventoryScreen(viewModel: PosViewModel) {
-    val products by viewModel.products.collectAsState()
+fun InventoryScreen(
+    inventoryViewModel: InventoryViewModel = hiltViewModel()
+) {
+    val products by inventoryViewModel.products.collectAsState()
     var selectedCategory by remember { mutableStateOf("Todos") }
     var showOnlyLowStock by remember { mutableStateOf(false) }
 
@@ -149,7 +152,7 @@ fun InventoryScreen(viewModel: PosViewModel) {
             onDismiss = { showProductSheet = false },
             onSave = { name, price, category, stock, colorHex, barcode, variants, modifiers ->
                 if (productToEdit == null) {
-                    viewModel.addProduct(name, price, category, stock, colorHex, barcode, variants, modifiers)
+                    inventoryViewModel.addProduct(name, price, category, stock, colorHex, barcode, variants, modifiers)
                 } else {
                     val updated = productToEdit!!.copy(
                         name = name,
@@ -161,7 +164,7 @@ fun InventoryScreen(viewModel: PosViewModel) {
                         variants = variants,
                         modifiers = modifiers
                     )
-                    viewModel.updateProduct(updated)
+                    inventoryViewModel.updateProduct(updated)
                 }
                 showProductSheet = false
             }
@@ -176,7 +179,7 @@ fun InventoryScreen(viewModel: PosViewModel) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        productToDelete?.let { viewModel.deleteProduct(it.id) }
+                        productToDelete?.let { inventoryViewModel.deleteProduct(it.id) }
                         productToDelete = null
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = AppleRed)

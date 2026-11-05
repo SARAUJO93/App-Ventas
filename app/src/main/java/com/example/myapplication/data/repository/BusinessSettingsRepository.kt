@@ -34,7 +34,9 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
             footerNote = prefs.getString("footerNote", "¡GRACIAS POR SU COMPRA!") ?: "¡GRACIAS POR SU COMPRA!",
             autoPrintReceipt = prefs.getBoolean("autoPrintReceipt", false),
             paperSize = prefs.getString("paperSize", "58mm") ?: "58mm",
-            printerName = prefs.getString("printerName", "Impresora Térmica Bluetooth") ?: "Impresora Térmica Bluetooth"
+            printerName = prefs.getString("printerName", "Impresora Térmica Bluetooth") ?: "Impresora Térmica Bluetooth",
+            isFirstLaunch = prefs.getBoolean("isFirstLaunch", true),
+            businessSector = prefs.getString("businessSector", "General") ?: "General"
         )
     }
 
@@ -48,6 +50,8 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
             .putBoolean("autoPrintReceipt", newSettings.autoPrintReceipt)
             .putString("paperSize", newSettings.paperSize)
             .putString("printerName", newSettings.printerName)
+            .putBoolean("isFirstLaunch", newSettings.isFirstLaunch)
+            .putString("businessSector", newSettings.businessSector)
             .apply()
         _settings.value = newSettings
     }

@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.CartItem
 import com.example.myapplication.model.Customer
 import com.example.myapplication.model.Order
@@ -27,22 +28,22 @@ import com.example.myapplication.model.PaymentMethod
 import com.example.myapplication.model.ServiceType
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.theme.AppleGreen
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.CartViewModel
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartBottomSheet(
-    viewModel: PosViewModel,
+    cartViewModel: CartViewModel = hiltViewModel(),
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
-    val cartItems by viewModel.cartItems.collectAsState()
-    val selectedTipPercent by viewModel.tipPercent.collectAsState()
-    val selectedDiscountPercent by viewModel.discountPercent.collectAsState()
-    val selectedServiceType by viewModel.selectedServiceType.collectAsState()
-    val selectedCartCustomer by viewModel.selectedCartCustomer.collectAsState()
-    val customers by viewModel.customers.collectAsState()
+    val cartItems by cartViewModel.cartItems.collectAsState()
+    val selectedTipPercent by cartViewModel.tipPercent.collectAsState()
+    val selectedDiscountPercent by cartViewModel.discountPercent.collectAsState()
+    val selectedServiceType by cartViewModel.selectedServiceType.collectAsState()
+    val selectedCartCustomer by cartViewModel.selectedCartCustomer.collectAsState()
+    val customers by cartViewModel.customers.collectAsState()
 
     var showCheckout by remember { mutableStateOf(false) }
     var showCustomerDialog by remember { mutableStateOf(false) }
@@ -51,7 +52,6 @@ fun CartBottomSheet(
     if (completedOrder != null) {
         TicketReceiptModal(
             order = completedOrder!!,
-            viewModel = viewModel,
             onDismiss = {
                 completedOrder = null
                 onDismiss()
@@ -68,7 +68,7 @@ fun CartBottomSheet(
     ) {
         if (showCheckout) {
             CheckoutView(
-                viewModel = viewModel,
+                cartViewModel = cartViewModel,
                 onBack = { showCheckout = false },
                 onComplete = { order ->
                     completedOrder = order
@@ -98,7 +98,7 @@ fun CartBottomSheet(
                     serviceTypes.forEach { (type, label) ->
                         FilterChip(
                             selected = selectedServiceType == type,
-                            onClick = { viewModel.setServiceType(type) },
+                            onClick = { cartViewModel.setServiceType(type) },
                             label = { Text(label) },
                             modifier = Modifier.weight(1f)
                         )
@@ -133,7 +133,7 @@ fun CartBottomSheet(
                     items(cartItems) { item ->
                         CartItemRow(
                             item = item,
-                            onQuantityChange = { newQ -> viewModel.updateCartItemQuantity(item.product.id, newQ) }
+                            onQuantityChange = { newQ -> cartViewModel.updateCartItemQuantity(item.product.id, newQ) }
                         )
                     }
                 }
@@ -146,7 +146,7 @@ fun CartBottomSheet(
                     items(discounts) { (percent, label) ->
                         FilterChip(
                             selected = selectedDiscountPercent == percent,
-                            onClick = { viewModel.setDiscountPercent(percent) },
+                            onClick = { cartViewModel.setDiscountPercent(percent) },
                             label = { Text(label) }
                         )
                     }
@@ -158,7 +158,7 @@ fun CartBottomSheet(
                     items(tips) { (percent, label) ->
                         FilterChip(
                             selected = selectedTipPercent == percent,
-                            onClick = { viewModel.setTipPercent(percent) },
+                            onClick = { cartViewModel.setTipPercent(percent) },
                             label = { Text(label) }
                         )
                     }
@@ -172,25 +172,25 @@ fun CartBottomSheet(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Subtotal", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartSubtotal)}")
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartSubtotal)}")
                 }
 
-                if (viewModel.cartDiscount > 0) {
+                if (cartViewModel.cartDiscount > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Descuento (${selectedDiscountPercent.toInt()}%)", color = AppleGreen)
-                        Text("-\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartDiscount)}", color = AppleGreen, fontWeight = FontWeight.SemiBold)
+                        Text("-\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartDiscount)}", color = AppleGreen, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("IVA (16%)", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTax)}")
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTax)}")
                 }
 
-                if (viewModel.cartTip > 0) {
+                if (cartViewModel.cartTip > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Propina (${selectedTipPercent.toInt()}%)", color = MaterialTheme.colorScheme.primary)
-                        Text("+\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTip)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        Text("+\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTip)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -198,13 +198,13 @@ fun CartBottomSheet(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Total a Pagar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("\$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 AppleButton(
-                    text = "Cobrar \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
+                    text = "Cobrar \$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}",
                     enabled = cartItems.isNotEmpty(),
                     onClick = { showCheckout = true }
                 )
@@ -223,7 +223,7 @@ fun CartBottomSheet(
                     item {
                         TextButton(
                             onClick = {
-                                viewModel.setCartCustomer(null)
+                                cartViewModel.setCartCustomer(null)
                                 showCustomerDialog = false
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -234,7 +234,7 @@ fun CartBottomSheet(
                     items(customers) { customer ->
                         Card(
                             onClick = {
-                                viewModel.setCartCustomer(customer)
+                                cartViewModel.setCartCustomer(customer)
                                 showCustomerDialog = false
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -301,12 +301,12 @@ fun CartItemRow(item: CartItem, onQuantityChange: (Int) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutView(
-    viewModel: PosViewModel,
+    cartViewModel: CartViewModel,
     onBack: () -> Unit,
     onComplete: (Order) -> Unit
 ) {
-    val customers by viewModel.customers.collectAsState()
-    val selectedCartCustomer by viewModel.selectedCartCustomer.collectAsState()
+    val customers by cartViewModel.customers.collectAsState()
+    val selectedCartCustomer by cartViewModel.selectedCartCustomer.collectAsState()
 
     var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
     var selectedCustomer by remember { mutableStateOf<Customer?>(selectedCartCustomer) }
@@ -329,7 +329,7 @@ fun CheckoutView(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Total a cobrar: \$${String.format(Locale.getDefault(), "%.2f", viewModel.cartTotal)}",
+                "Total a cobrar: \$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -417,7 +417,7 @@ fun CheckoutView(
                 enabled = canConfirm,
                 onClick = {
                     val method = selectedMethod ?: PaymentMethod.CASH
-                    processedOrder = viewModel.processCheckout(method, selectedCustomer?.id)
+                    processedOrder = cartViewModel.processCheckout(method, selectedCustomer?.id)
                     isDone = true
                 },
                 backgroundColor = if (canConfirm) MaterialTheme.colorScheme.primary else Color.Gray

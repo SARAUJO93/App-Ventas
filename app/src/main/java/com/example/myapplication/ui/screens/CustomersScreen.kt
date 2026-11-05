@@ -21,18 +21,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.model.Customer
 import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.theme.AppleGreen
 import com.example.myapplication.ui.theme.AppleRed
-import com.example.myapplication.viewmodel.PosViewModel
+import com.example.myapplication.viewmodel.CustomersViewModel
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomersScreen(viewModel: PosViewModel) {
-    val customers by viewModel.customers.collectAsState()
+fun CustomersScreen(customersViewModel: CustomersViewModel = hiltViewModel()) {
+    val customers by customersViewModel.customers.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
     var showCustomerSheet by remember { mutableStateOf(false) }
@@ -126,7 +127,7 @@ fun CustomersScreen(viewModel: PosViewModel) {
             onDismiss = { showCustomerSheet = false },
             onSave = { name, phone, email, initialDebt ->
                 if (customerToEdit == null) {
-                    viewModel.addCustomer(name, phone, email, initialDebt)
+                    customersViewModel.addCustomer(name, phone, email, initialDebt)
                 } else {
                     val updated = customerToEdit!!.copy(
                         name = name,
@@ -134,7 +135,7 @@ fun CustomersScreen(viewModel: PosViewModel) {
                         email = email,
                         debtBalance = initialDebt
                     )
-                    viewModel.updateCustomer(updated)
+                    customersViewModel.updateCustomer(updated)
                 }
                 showCustomerSheet = false
             }
@@ -146,7 +147,7 @@ fun CustomersScreen(viewModel: PosViewModel) {
             customer = customerToAbonar!!,
             onDismiss = { customerToAbonar = null },
             onConfirmPayment = { amount ->
-                viewModel.recordCustomerPayment(customerToAbonar!!.id, amount)
+                customersViewModel.recordCustomerPayment(customerToAbonar!!.id, amount)
                 customerToAbonar = null
             }
         )
@@ -160,7 +161,7 @@ fun CustomersScreen(viewModel: PosViewModel) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        customerToDelete?.let { viewModel.deleteCustomer(it.id) }
+                        customerToDelete?.let { customersViewModel.deleteCustomer(it.id) }
                         customerToDelete = null
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = AppleRed)
