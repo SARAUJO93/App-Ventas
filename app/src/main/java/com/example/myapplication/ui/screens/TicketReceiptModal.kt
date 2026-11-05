@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import com.example.myapplication.model.BusinessSettings
 import com.example.myapplication.model.Order
 import com.example.myapplication.model.ServiceType
 import com.example.myapplication.ui.components.AppleButton
+import com.example.myapplication.util.PdfReceiptGenerator
 import com.example.myapplication.viewmodel.PosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -186,7 +188,18 @@ fun TicketReceiptModal(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        PdfReceiptGenerator.generateAndOpenPdf(context, order, settings)
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("PDF")
+                }
+
                 OutlinedButton(
                     onClick = {
                         val shareText = buildString {
