@@ -1,0 +1,12 @@
+{
+    "app_dir": "C:\\Users\\sergi\\AndroidStudioProjects\\MyApplication",
+    "app_label": "app_name",
+    "foreground_services": [],
+    "package_name": "com.example.myapplication",
+    "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
+    ],
+    "target_sdk": 34
+}

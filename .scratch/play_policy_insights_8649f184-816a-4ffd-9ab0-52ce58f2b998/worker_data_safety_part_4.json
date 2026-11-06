@@ -1,0 +1,40 @@
+{
+  "domain": "Data Safety and Privacy",
+  "findings": [
+    {
+      "psl_constant": "MUSIC",
+      "policy_id": "data_safety_section",
+      "issue_summary": "Data Safety Compliant (Local-Only)",
+      "severity": "SUGGESTION",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/ReportsScreen.kt"
+      ],
+      "evidence": "In ReportsScreen.kt line 192, 'trackColor' is a parameter for Material 3 LinearProgressIndicator UI styling, not user music files. No music data is collected or transferred.",
+      "recommendation": "No action required. The 'track' pattern is a false positive matching a Compose progress indicator property.",
+      "is_transferred": false,
+      "user_initiated": false,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "Local functionality only",
+      "linked_to_user": false
+    },
+    {
+      "psl_constant": "FILES_AND_DOCS",
+      "policy_id": "prominent_disclosure_policy",
+      "issue_summary": "Manual Sharing",
+      "severity": "SUGGESTION",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/TicketReceiptModal.kt",
+        "app/src/main/java/com/example/myapplication/util/PdfReceiptGenerator.kt"
+      ],
+      "evidence": "TicketReceiptModal.kt uses Intent.ACTION_SEND with text/plain and Intent.ACTION_VIEW with application/pdf via PdfReceiptGenerator.kt when the user explicitly clicks the Share or PDF buttons to export/open receipt files.",
+      "recommendation": "Manual sharing triggered by user action via Android Share Sheet is policy exempt from prominent disclosure requirements. Ensure Play Store Data Safety section reflects app document export functionality if required.",
+      "is_transferred": true,
+      "user_initiated": true,
+      "is_third_party": true,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "App functionality",
+      "linked_to_user": false
+    }
+  ]
+}

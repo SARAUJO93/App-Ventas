@@ -1,0 +1,17 @@
+{
+  "6": {
+    "action": "VERIFIED",
+    "confidence": "High",
+    "critic_justification": "Verified against AuthViewModel.kt and EmailAuthScreen.kt: user email is collected during user-initiated authentication and transferred off-device to Firebase Auth."
+  },
+  "7": {
+    "action": "VERIFIED",
+    "confidence": "High",
+    "critic_justification": "Verified against WelcomeScreen.kt, EmailAuthScreen.kt, and AuthViewModel.kt: account identifiers and credentials (Google ID token, email/password) are collected and sent off-device to Firebase Auth."
+  },
+  "11": {
+    "action": "VERIFIED",
+    "confidence": "High",
+    "critic_justification": "Verified against WelcomeScreen.kt, EmailAuthScreen.kt, and AuthViewModel.kt: the app implements account creation and authentication via Firebase, necessitating reviewer test credentials and account deletion info in Play Console."
+  }
+}

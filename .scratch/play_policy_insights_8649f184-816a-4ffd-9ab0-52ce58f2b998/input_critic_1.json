@@ -1,0 +1,59 @@
+{
+    "6": {
+        "psl_constant": "EMAIL",
+        "policy_id": "data_safety_section",
+        "issue_summary": "User-Initiated Collection",
+        "severity": "IMPORTANT",
+        "files_involved": [
+            "app/src/main/java/com/example/myapplication/ui/screens/CustomersScreen.kt",
+            "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt",
+            "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt"
+        ],
+        "evidence": "AuthViewModel.kt uses Firebase Auth (signInWithEmailAndPassword / createUserWithEmailAndPassword) to authenticate users using their email address when initiated by the user in EmailAuthScreen.kt. CustomersScreen.kt manages customer email addresses locally in Room DB.",
+        "recommendation": "Declare EMAIL collection in the Play Store Data Safety section under App functionality / Account management, linked to the user account.",
+        "is_transferred": true,
+        "user_initiated": true,
+        "is_third_party": false,
+        "prominent_disclosure_status": "EXEMPT",
+        "purpose": "App functionality",
+        "linked_to_user": true,
+        "worker_file": "worker_data_safety_part_3.json",
+        "finding_id": "6"
+    },
+    "7": {
+        "psl_constant": "USER_ACCOUNT",
+        "policy_id": "data_safety_section",
+        "issue_summary": "User-Initiated Collection",
+        "severity": "IMPORTANT",
+        "files_involved": [
+            "app/src/main/java/com/example/myapplication/ui/screens/PinLockScreen.kt",
+            "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt",
+            "app/src/main/java/com/example/myapplication/ui/screens/auth/WelcomeScreen.kt",
+            "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt"
+        ],
+        "evidence": "User authentication credentials and account identifiers (Google ID token, email/password credentials) are sent to Firebase Auth during user-initiated authentication in WelcomeScreen.kt and EmailAuthScreen.kt. PinLockScreen.kt authenticates PINs locally against Room DB.",
+        "recommendation": "Declare USER_ACCOUNT collection in the Play Store Data Safety section under App functionality / Account management.",
+        "is_transferred": true,
+        "user_initiated": true,
+        "is_third_party": false,
+        "prominent_disclosure_status": "EXEMPT",
+        "purpose": "App functionality",
+        "linked_to_user": true,
+        "worker_file": "worker_data_safety_part_3.json",
+        "finding_id": "7"
+    },
+    "11": {
+        "policy_id": "login_credentials",
+        "issue_summary": "App implements a login and authentication interface requiring reviewer credentials and account deletion URL in Play Console.",
+        "severity": "IMPORTANT",
+        "files_involved": [
+            "app/src/main/java/com/example/myapplication/ui/screens/auth/WelcomeScreen.kt",
+            "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt",
+            "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt"
+        ],
+        "evidence": "WelcomeScreen.kt and EmailAuthScreen.kt display authentication screens, and AuthViewModel.kt handles Firebase Auth email/password login/registration and Google Sign-In.",
+        "recommendation": "Administrative Console Requirements: Because your app implements a login flow, you MUST complete two manual setup steps in the Play Console dashboard to pass review:\n1. Reviewer Demo Credentials: Submit active, non-expiring test credentials so Google Play reviewers can access your gated features.\n2. Account Deletion Link: Submit a public-facing web link for account deletion to satisfy Google Play's data deletion policies.",
+        "worker_file": "worker_user_account.json",
+        "finding_id": "11"
+    }
+}

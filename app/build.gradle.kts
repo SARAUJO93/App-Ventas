@@ -12,7 +12,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.novapos.app"
     compileSdk = 34
 
     signingConfigs {
@@ -25,11 +25,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.novapos.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "1.8.0"
+        versionCode = 11
+        versionName = "1.9.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

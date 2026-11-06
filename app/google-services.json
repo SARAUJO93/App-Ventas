@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:636959307320:android:40a85d60830f3df4ee18cd",
         "android_client_info": {
-          "package_name": "com.example.myapplication"
+          "package_name": "com.novapos.app"
         }
       },
       "oauth_client": [

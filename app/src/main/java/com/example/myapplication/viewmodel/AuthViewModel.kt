@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,5 +87,25 @@ class AuthViewModel @Inject constructor() : ViewModel() {
         auth.signOut()
         _currentUserEmail.value = null
         _authState.value = AuthState.Idle
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            _authState.value = AuthState.Loading
+            currentUser.delete()
+                .addOnSuccessListener {
+                    _currentUserEmail.value = null
+                    _authState.value = AuthState.Idle
+                    onSuccess()
+                }
+                .addOnFailureListener { e ->
+                    _authState.value = AuthState.Idle
+                    val msg = e.localizedMessage ?: "Para eliminar tu cuenta, debes haber iniciado sesión recientemente."
+                    onError(msg)
+                }
+        } else {
+            onError("No hay usuario autenticado.")
+        }
     }
 }

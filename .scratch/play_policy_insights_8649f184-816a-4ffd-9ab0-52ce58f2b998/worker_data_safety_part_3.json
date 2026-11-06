@@ -1,0 +1,63 @@
+{
+  "domain": "Data Safety and Privacy",
+  "findings": [
+    {
+      "psl_constant": "EMAIL",
+      "policy_id": "data_safety_section",
+      "issue_summary": "User-Initiated Collection",
+      "severity": "IMPORTANT",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/CustomersScreen.kt",
+        "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt"
+      ],
+      "evidence": "AuthViewModel.kt uses Firebase Auth (signInWithEmailAndPassword / createUserWithEmailAndPassword) to authenticate users using their email address when initiated by the user in EmailAuthScreen.kt. CustomersScreen.kt manages customer email addresses locally in Room DB.",
+      "recommendation": "Declare EMAIL collection in the Play Store Data Safety section under App functionality / Account management, linked to the user account.",
+      "is_transferred": true,
+      "user_initiated": true,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "App functionality",
+      "linked_to_user": true
+    },
+    {
+      "psl_constant": "USER_ACCOUNT",
+      "policy_id": "data_safety_section",
+      "issue_summary": "User-Initiated Collection",
+      "severity": "IMPORTANT",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/PinLockScreen.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/auth/WelcomeScreen.kt",
+        "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt"
+      ],
+      "evidence": "User authentication credentials and account identifiers (Google ID token, email/password credentials) are sent to Firebase Auth during user-initiated authentication in WelcomeScreen.kt and EmailAuthScreen.kt. PinLockScreen.kt authenticates PINs locally against Room DB.",
+      "recommendation": "Declare USER_ACCOUNT collection in the Play Store Data Safety section under App functionality / Account management.",
+      "is_transferred": true,
+      "user_initiated": true,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "App functionality",
+      "linked_to_user": true
+    },
+    {
+      "psl_constant": "FINANCIAL_INFO_OTHER",
+      "policy_id": "data_safety_section",
+      "issue_summary": "Data Safety Compliant (Local-Only)",
+      "severity": "SUGGESTION",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/ReportsScreen.kt",
+        "app/src/main/java/com/example/myapplication/viewmodel/ShiftViewModel.kt",
+        "app/src/main/java/com/example/myapplication/data/repository/PosRepository.kt"
+      ],
+      "evidence": "Financial information including sales income, expenses, cash shift balances, and customer debts are stored and processed exclusively in the local Room database (PosDatabase) and are not transmitted off-device.",
+      "recommendation": "No action required for Play Store Data Safety declaration as financial data remains on-device only.",
+      "is_transferred": false,
+      "user_initiated": false,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "Local functionality only",
+      "linked_to_user": false
+    }
+  ]
+}

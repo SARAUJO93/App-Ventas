@@ -21,16 +21,20 @@ import com.example.myapplication.ui.components.AppleButton
 import com.example.myapplication.ui.components.AppleCard
 import com.example.myapplication.ui.components.AppleSegmentedControl
 import com.example.myapplication.ui.theme.AppleGreen
+import com.example.myapplication.ui.theme.AppleRed
 import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
+    authViewModel: com.example.myapplication.viewmodel.AuthViewModel = hiltViewModel(),
     onDismiss: () -> Unit,
     onLogoutGlobal: () -> Unit
 ) {
     val currentSettings by settingsViewModel.businessSettings.collectAsState()
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var deleteAccountError by remember { mutableStateOf("") }
 
     var businessName by remember { mutableStateOf(currentSettings.businessName) }
     var address by remember { mutableStateOf(currentSettings.address) }
@@ -209,8 +213,8 @@ fun SettingsScreen(
                             Text("Acerca de Nova POS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
 
-                        val versionName = com.example.myapplication.BuildConfig.VERSION_NAME
-                        val versionCode = com.example.myapplication.BuildConfig.VERSION_CODE
+                        val versionName = com.novapos.app.BuildConfig.VERSION_NAME
+                        val versionCode = com.novapos.app.BuildConfig.VERSION_CODE
 
                         Text("Versión instalada: v$versionName (Build $versionCode)", style = MaterialTheme.typography.bodyMedium)
                         Text("Base de Datos Room v7 • Hilt DI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -262,8 +266,56 @@ fun SettingsScreen(
                 Text("Cerrar Sesión Global (Cambiar Cuenta)")
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { showDeleteAccountDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Eliminar mi cuenta y datos", color = AppleRed)
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { Text("¿Eliminar cuenta permanentemente?") },
+            text = {
+                Column {
+                    Text("Esta acción eliminará tu usuario y acceso de forma irreversible. ¿Deseas continuar?")
+                    if (deleteAccountError.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(deleteAccountError, color = com.example.myapplication.ui.theme.AppleRed, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.deleteAccount(
+                            onSuccess = {
+                                showDeleteAccountDialog = false
+                                onLogoutGlobal()
+                            },
+                            onError = { err ->
+                                deleteAccountError = err
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = com.example.myapplication.ui.theme.AppleRed)
+                ) {
+                    Text("Eliminar Cuenta", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     if (showUpdateDialog) {

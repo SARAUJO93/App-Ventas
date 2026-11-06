@@ -1,0 +1,28 @@
+{
+  "domain": "User Account and Identity",
+  "findings": [
+    {
+      "policy_id": "login_credentials",
+      "issue_summary": "App implements a login and authentication interface requiring reviewer credentials and account deletion URL in Play Console.",
+      "severity": "IMPORTANT",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/ui/screens/auth/WelcomeScreen.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/auth/EmailAuthScreen.kt",
+        "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt"
+      ],
+      "evidence": "WelcomeScreen.kt and EmailAuthScreen.kt display authentication screens, and AuthViewModel.kt handles Firebase Auth email/password login/registration and Google Sign-In.",
+      "recommendation": "Administrative Console Requirements: Because your app implements a login flow, you MUST complete two manual setup steps in the Play Console dashboard to pass review:\n1. Reviewer Demo Credentials: Submit active, non-expiring test credentials so Google Play reviewers can access your gated features.\n2. Account Deletion Link: Submit a public-facing web link for account deletion to satisfy Google Play's data deletion policies."
+    },
+    {
+      "policy_id": "account_deletion",
+      "issue_summary": "App manages user accounts but does not provide an in-app account deletion mechanism.",
+      "severity": "IMPORTANT",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/viewmodel/AuthViewModel.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/SettingsScreen.kt"
+      ],
+      "evidence": "AuthViewModel.kt and SettingsScreen.kt provide logout functionality (auth.signOut()), but lack any feature, UI control, or API integration for users to delete their account or request backend data erasure.",
+      "recommendation": "Implement in-app deletion: Create a highly discoverable path (e.g., under User Profile/Account Settings) to let users initiate account deletion directly in the app."
+    }
+  ]
+}

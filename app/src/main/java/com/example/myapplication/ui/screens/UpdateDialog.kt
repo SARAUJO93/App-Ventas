@@ -70,7 +70,7 @@ fun UpdateDialog(
             when (val state = updateState) {
                 is UpdateState.Idle -> {
                     Text("Presiona para buscar actualizaciones en GitHub.")
-                    val versionName = com.example.myapplication.BuildConfig.VERSION_NAME
+                    val versionName = com.novapos.app.BuildConfig.VERSION_NAME
                     AppleButton("Buscar Ahora", onClick = { settingsViewModel.checkForUpdates(versionName) })
                 }
                 is UpdateState.Checking -> {
@@ -78,7 +78,7 @@ fun UpdateDialog(
                     Text("Consultando GitHub Releases...", style = MaterialTheme.typography.bodyMedium)
                 }
                 is UpdateState.NoUpdateAvailable -> {
-                    val versionName = com.example.myapplication.BuildConfig.VERSION_NAME
+                    val versionName = com.novapos.app.BuildConfig.VERSION_NAME
                     Text(
                         text = "¡Tienes la versión más reciente de Nova POS! (v$versionName)",
                         color = AppleGreen,
@@ -134,7 +134,7 @@ fun UpdateDialog(
                     )
                 }
                 is UpdateState.Error -> {
-                    val versionName = com.example.myapplication.BuildConfig.VERSION_NAME
+                    val versionName = com.novapos.app.BuildConfig.VERSION_NAME
                     Text(text = state.message, color = AppleRed)
                     AppleButton("Reintentar", onClick = { settingsViewModel.checkForUpdates(versionName) })
                 }

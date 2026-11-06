@@ -1,0 +1,43 @@
+{
+  "domain": "Data Safety and Privacy",
+  "findings": [
+    {
+      "psl_constant": "PURCHASE_HISTORY",
+      "policy_id": "data_safety_section",
+      "issue_summary": "Data Safety Compliant (Local-Only)",
+      "severity": "SUGGESTION",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/data/local/Entities.kt",
+        "app/src/main/java/com/example/myapplication/data/local/PosDao.kt",
+        "app/src/main/java/com/example/myapplication/data/repository/PosRepository.kt"
+      ],
+      "evidence": "OrderEntity and OrderItemEntity store purchase/order history locally in the Room SQLite database via PosDao.processSaleAtomic and PosRepository.processCheckoutAtomic. No off-device network transfer or third-party egress exists for purchase history.",
+      "recommendation": "No action required as purchase history remains stored locally on-device.",
+      "is_transferred": false,
+      "user_initiated": false,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "Local functionality only",
+      "linked_to_user": false
+    },
+    {
+      "psl_constant": "AUDIO",
+      "policy_id": "data_safety_section",
+      "issue_summary": "Data Safety Compliant (Local-Only)",
+      "severity": "SUGGESTION",
+      "files_involved": [
+        "app/src/main/java/com/example/myapplication/data/repository/PosRepository.kt",
+        "app/src/main/java/com/example/myapplication/ui/screens/CustomersScreen.kt",
+        "app/src/main/java/com/example/myapplication/viewmodel/CustomersViewModel.kt"
+      ],
+      "evidence": "The keyword 'record' in the specified files refers to recording financial transactions (recordCustomerPayment, RecordPaymentSheet), not audio or voice recording. No audio data or recording APIs exist in the codebase.",
+      "recommendation": "No action required as no audio data is collected or transmitted.",
+      "is_transferred": false,
+      "user_initiated": false,
+      "is_third_party": false,
+      "prominent_disclosure_status": "EXEMPT",
+      "purpose": "Local functionality only",
+      "linked_to_user": false
+    }
+  ]
+}
