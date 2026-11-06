@@ -1,0 +1,54 @@
+package com.novapos.app.di
+
+import android.content.Context
+import androidx.room.Room
+import com.novapos.app.data.local.PosDao
+import com.novapos.app.data.local.PosDatabase
+import com.novapos.app.data.repository.*
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): PosDatabase {
+        return Room.databaseBuilder(
+            context,
+            PosDatabase::class.java,
+            "nova_pos_db"
+        ).fallbackToDestructiveMigration().build()
+    }
+
+    @Provides
+    fun providePosDao(db: PosDatabase): PosDao {
+        return db.posDao()
+    }
+
+    @Provides
+    @Singleton
+    fun providePosRepository(
+        dao: PosDao,
+        syncManager: com.novapos.app.data.remote.FirestoreSyncManager
+    ): PosRepository {
+        return PosRepositoryImpl(dao, syncManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBusinessSettingsRepository(@ApplicationContext context: Context): BusinessSettingsRepository {
+        return BusinessSettingsRepositoryImpl(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUpdateRepository(@ApplicationContext context: Context): UpdateRepository {
+        return UpdateRepositoryImpl(context)
+    }
+}

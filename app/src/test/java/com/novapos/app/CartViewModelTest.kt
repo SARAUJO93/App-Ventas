@@ -1,7 +1,7 @@
 package com.novapos.app
 
-import com.example.myapplication.model.*
-import com.example.myapplication.viewmodel.CartViewModel
+import com.novapos.app.model.*
+import com.novapos.app.viewmodel.CartViewModel
 import com.novapos.app.fakes.FakePosRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
