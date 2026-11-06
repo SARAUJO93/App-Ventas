@@ -56,8 +56,8 @@ android {
         applicationId = "com.novapos.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 24
-        versionName = "3.5.1"
+        versionCode = 25
+        versionName = "4.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
