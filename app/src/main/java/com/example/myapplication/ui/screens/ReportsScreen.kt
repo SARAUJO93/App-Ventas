@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -77,6 +78,7 @@ fun ReportsScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,10 +91,17 @@ fun ReportsScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            OutlinedButton(onClick = { showShiftModal = true }) {
-                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(if (activeShift == null) "Apertura Caja" else "Corte Z")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = {
+                    com.example.myapplication.util.ReportExporter.exportOrdersToCsv(context, orders)
+                }) {
+                    Icon(Icons.Default.Share, contentDescription = "Exportar a Excel / CSV", tint = AppleBlue)
+                }
+                OutlinedButton(onClick = { showShiftModal = true }) {
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (activeShift == null) "Apertura Caja" else "Corte Z")
+                }
             }
         }
 

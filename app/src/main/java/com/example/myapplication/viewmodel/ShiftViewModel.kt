@@ -45,6 +45,13 @@ class ShiftViewModel @Inject constructor(
         _currentEmployee.value = null
     }
 
+    fun verifyAdminPin(pin: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val emp = repository.authenticatePin(pin)
+            onResult(emp?.role == "ADMIN")
+        }
+    }
+
     fun openShift(cashierName: String, initialCash: Double) {
         viewModelScope.launch {
             repository.openShift(cashierName, initialCash)

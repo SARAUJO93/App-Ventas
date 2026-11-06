@@ -19,5 +19,6 @@ class NovaPosApplication : Application() {
         CoroutineScope(Dispatchers.IO).launch {
             repository.populateInitialData()
         }
+        com.example.myapplication.data.worker.SyncWorker.schedulePeriodicSync(this)
     }
 }

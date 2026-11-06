@@ -420,7 +420,8 @@ fun CheckoutView(
             )
             Spacer(modifier = Modifier.height(32.dp))
         } else {
-            Box(modifier = Modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFF34C759)),
@@ -431,7 +432,25 @@ fun CheckoutView(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("¡Venta Completada!", style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.height(24.dp))
-                    AppleButton("Ver Ticket", onClick = { processedOrder?.let { onComplete(it) } })
+
+                    AppleButton(
+                        text = "Compartir Ticket 📄 (WhatsApp)",
+                        onClick = {
+                            processedOrder?.let { order ->
+                                com.example.myapplication.util.ReceiptGenerator.generateAndShareReceipt(context, order)
+                            }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = { processedOrder?.let { onComplete(it) } },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cerrar")
+                    }
                 }
             }
         }

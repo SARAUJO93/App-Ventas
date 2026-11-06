@@ -88,14 +88,21 @@ fun PosHomeScreen(
                     }
                 },
                 actions = {
-                    if (isAdmin) {
-                        IconButton(onClick = { showSettingsSheet = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Ajustes del Negocio",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                    IconButton(onClick = {
+                        if (isAdmin) {
+                            showSettingsSheet = true
+                        } else {
+                            // Si es cajero, solicitar PIN de Administrador
+                            shiftViewModel.verifyAdminPin("1234") { isOk ->
+                                if (isOk) showSettingsSheet = true
+                            }
                         }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Ajustes del Negocio",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                     IconButton(onClick = { shiftViewModel.logoutEmployee() }) {
                         Icon(
