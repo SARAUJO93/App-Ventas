@@ -1,13 +1,16 @@
 package com.novapos.app.data.remote
 
 import android.util.Log
-import com.novapos.app.model.*
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
+import com.novapos.app.model.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,8 +23,8 @@ class FirestoreSyncManager @Inject constructor() {
     private val businessUid: String?
         get() = auth.currentUser?.uid
 
-    fun syncOrderToCloud(order: Order) {
-        val uid = businessUid ?: return
+    suspend fun syncOrderToCloud(order: Order): Boolean {
+        val uid = businessUid ?: return false
 
         val orderMap = hashMapOf(
             "id" to order.id,
@@ -39,21 +42,23 @@ class FirestoreSyncManager @Inject constructor() {
             "itemsCount" to order.items.size
         )
 
-        firestore.collection("businesses")
-            .document(uid)
-            .collection("orders")
-            .document(order.id)
-            .set(orderMap)
-            .addOnSuccessListener {
-                Log.d("FirestoreSyncManager", "Orden ${order.id} sincronizada en la nube con éxito")
-            }
-            .addOnFailureListener { e ->
-                Log.e("FirestoreSyncManager", "Error al sincronizar orden ${order.id}", e)
-            }
+        return try {
+            firestore.collection("businesses")
+                .document(uid)
+                .collection("orders")
+                .document(order.id)
+                .set(orderMap)
+                .await()
+            Log.d("FirestoreSyncManager", "Orden ${order.id} sincronizada en la nube con éxito")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreSyncManager", "Error al sincronizar orden ${order.id}", e)
+            false
+        }
     }
 
-    fun syncProductToCloud(product: Product) {
-        val uid = businessUid ?: return
+    suspend fun syncProductToCloud(product: Product): Boolean {
+        val uid = businessUid ?: return false
 
         val productMap = hashMapOf(
             "id" to product.id,
@@ -64,33 +69,37 @@ class FirestoreSyncManager @Inject constructor() {
             "barcode" to product.barcode
         )
 
-        firestore.collection("businesses")
-            .document(uid)
-            .collection("products")
-            .document(product.id)
-            .set(productMap, com.google.firebase.firestore.SetOptions.merge())
-            .addOnSuccessListener {
-                Log.d("FirestoreSyncManager", "Producto ${product.id} sincronizado en la nube")
-            }
-            .addOnFailureListener { e ->
-                Log.e("FirestoreSyncManager", "Error al sincronizar producto ${product.id}", e)
-            }
+        return try {
+            firestore.collection("businesses")
+                .document(uid)
+                .collection("products")
+                .document(product.id)
+                .set(productMap, SetOptions.merge())
+                .await()
+            Log.d("FirestoreSyncManager", "Producto ${product.id} sincronizado en la nube")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreSyncManager", "Error al sincronizar producto ${product.id}", e)
+            false
+        }
     }
 
-    fun deductStockAtomicInCloud(productId: String, quantityToDeduct: Int) {
-        val uid = businessUid ?: return
+    suspend fun deductStockAtomicInCloud(productId: String, quantityToDeduct: Int): Boolean {
+        val uid = businessUid ?: return false
 
-        firestore.collection("businesses")
-            .document(uid)
-            .collection("products")
-            .document(productId)
-            .update("stock", com.google.firebase.firestore.FieldValue.increment(-quantityToDeduct.toLong()))
-            .addOnSuccessListener {
-                Log.d("FirestoreSyncManager", "Deducción atómica de stock para $productId (-$quantityToDeduct)")
-            }
-            .addOnFailureListener { e ->
-                Log.e("FirestoreSyncManager", "Error al deducir stock atómicamente para $productId", e)
-            }
+        return try {
+            firestore.collection("businesses")
+                .document(uid)
+                .collection("products")
+                .document(productId)
+                .update("stock", FieldValue.increment(-quantityToDeduct.toLong()))
+                .await()
+            Log.d("FirestoreSyncManager", "Deducción atómica de stock para $productId (-$quantityToDeduct)")
+            true
+        } catch (e: Exception) {
+            Log.e("FirestoreSyncManager", "Error al deducir stock atómicamente para $productId", e)
+            false
+        }
     }
 
     fun listenRemoteProducts(): Flow<List<Product>> = callbackFlow {

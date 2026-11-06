@@ -299,14 +299,17 @@ class PosRepositoryImpl @Inject constructor(
             }
         }
 
-        // 5. Sincronizar en la Nube (Cloud Firestore Atómico con FieldValue.increment)
+        // 5. Sincronizar en la Nube (Cloud Firestore Atómico con confirmación de estado)
         try {
-            syncManager.syncOrderToCloud(order)
+            val isSynced = syncManager.syncOrderToCloud(order)
+            if (isSynced) {
+                dao.markOrderAsSynced(order.id)
+            }
             for (item in order.items) {
                 syncManager.deductStockAtomicInCloud(item.product.id, item.quantity)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("PosRepository", "Error durante sincronización directa de orden ${order.id}", e)
         }
 
         return order

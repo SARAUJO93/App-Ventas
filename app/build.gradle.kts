@@ -53,11 +53,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.novapos.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 26
-        versionName = "4.3.0"
+        versionCode = 27
+        versionName = "4.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -129,6 +129,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
@@ -137,6 +138,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("app.cash.turbine:turbine:1.1.0")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("org.robolectric:robolectric:4.12.2")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

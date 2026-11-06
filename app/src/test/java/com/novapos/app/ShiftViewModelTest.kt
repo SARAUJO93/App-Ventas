@@ -1,5 +1,6 @@
 package com.novapos.app
 
+import androidx.test.core.app.ApplicationProvider
 import com.novapos.app.fakes.FakePosRepository
 import com.novapos.app.viewmodel.ShiftViewModel
 import kotlinx.coroutines.Dispatchers
@@ -10,7 +11,11 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class ShiftViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -20,8 +25,9 @@ class ShiftViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         repository = FakePosRepository()
-        viewModel = ShiftViewModel(repository)
+        viewModel = ShiftViewModel(context, repository)
     }
 
     @After

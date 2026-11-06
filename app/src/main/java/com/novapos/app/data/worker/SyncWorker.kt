@@ -70,8 +70,13 @@ class SyncWorker(
                         serviceType = ServiceType.valueOf(entity.serviceType)
                     )
 
-                    syncManager.syncOrderToCloud(order)
-                    dao.markOrderAsSynced(entity.id)
+                    val isSuccess = syncManager.syncOrderToCloud(order)
+                    if (isSuccess) {
+                        dao.markOrderAsSynced(entity.id)
+                        Log.d("SyncWorker", "Orden ${entity.id} marcada como sincronizada exitosamente")
+                    } else {
+                        Log.w("SyncWorker", "No se pudo sincronizar la orden ${entity.id} a la nube. Permanece en la cola local.")
+                    }
                 }
             }
 
