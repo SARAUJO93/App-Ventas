@@ -38,6 +38,7 @@ fun WelcomeScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = CredentialManager.create(context)
+    val authState by authViewModel.authState.collectAsState()
 
     val webClientId = remember(context) {
         val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
@@ -49,6 +50,16 @@ fun WelcomeScreen(
     }
 
     var showDeveloperErrorDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is com.novapos.app.viewmodel.AuthState.Error -> {
+                val msg = (authState as com.novapos.app.viewmodel.AuthState.Error).message
+                Toast.makeText(context, "Error de inicio de sesión: $msg", Toast.LENGTH_LONG).show()
+            }
+            else -> {}
+        }
+    }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
