@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.novapos.app.data.local.TransactionEntity
 import com.novapos.app.model.Order
 import com.novapos.app.model.PaymentMethod
@@ -82,26 +83,40 @@ fun ReportsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Reportes y Finanzas",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(onClick = {
-                    com.novapos.app.util.ReportExporter.exportOrdersToCsv(context, orders)
-                }) {
-                    Icon(Icons.Default.Share, contentDescription = "Exportar a Excel / CSV", tint = AppleBlue)
-                }
-                OutlinedButton(onClick = { showShiftModal = true }) {
-                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (activeShift == null) "Apertura Caja" else "Corte Z")
-                }
+            Column {
+                Text(
+                    text = "Finanzas",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(text = "Ver cuentas", style = MaterialTheme.typography.labelSmall, color = AppleBlue)
+            }
+            IconButton(onClick = {
+                com.novapos.app.util.ReportExporter.exportOrdersToCsv(context, orders)
+            }) {
+                Icon(Icons.Default.Share, contentDescription = "Exportar a Excel / CSV", tint = AppleBlue)
+            }
+        }
+
+        // Selector de Periodo: < Últimos 30 días >
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("<", fontSize = 18.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text("Últimos 30 días", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(">", fontSize = 18.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
             }
         }
 

@@ -1,122 +1,54 @@
 package com.novapos.app.ui.screens
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PointOfSale
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TableBar
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.novapos.app.ui.theme.AppleRed
-import com.novapos.app.viewmodel.SettingsAndUpdateViewModel
 import com.novapos.app.viewmodel.ShiftViewModel
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    object Sales : Screen("sales", "Ventas", Icons.Default.PointOfSale)
-    object Tables : Screen("tables", "Mesas", Icons.Default.TableBar)
-    object Customers : Screen("customers", "Clientes", Icons.Default.People)
-    object Inventory : Screen("inventory", "Inventario", Icons.Default.Inventory)
-    object Reports : Screen("reports", "Reportes", Icons.Default.Assessment)
+    object Home : Screen("home", "Inicio", Icons.Default.Home)
+    object Products : Screen("products", "Productos", Icons.Default.Inventory2)
+    object Sale : Screen("sale", "Venta", Icons.Default.AddCircle)
+    object Transactions : Screen("transactions", "Transacciones", Icons.Default.ReceiptLong)
+    object More : Screen("more", "Más", Icons.Default.Menu)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PosHomeScreen(
     onLogoutGlobal: () -> Unit
 ) {
     val shiftViewModel: ShiftViewModel = hiltViewModel()
-    val settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel()
-    
     val navController = rememberNavController()
     val currentEmployee by shiftViewModel.currentEmployee.collectAsState()
-    val businessSettings by settingsViewModel.businessSettings.collectAsState()
-
-    var showSettingsSheet by remember { mutableStateOf(false) }
 
     if (currentEmployee == null) {
         PinLockScreen()
         return
     }
 
-    val isAdmin = currentEmployee?.role == "ADMIN"
-
-    val items = if (isAdmin) {
-        listOf(
-            Screen.Sales,
-            Screen.Tables,
-            Screen.Customers,
-            Screen.Inventory,
-            Screen.Reports
-        )
-    } else {
-        listOf(
-            Screen.Sales,
-            Screen.Tables,
-            Screen.Customers
-        )
-    }
+    val items = listOf(
+        Screen.Home,
+        Screen.Products,
+        Screen.Sale,
+        Screen.Transactions,
+        Screen.More
+    )
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = businessSettings.businessName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${currentEmployee!!.name} • ${if (isAdmin) "Administrador" else "Cajero"}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        if (isAdmin) {
-                            showSettingsSheet = true
-                        } else {
-                            // Si es cajero, solicitar PIN de Administrador
-                            shiftViewModel.verifyAdminPin("1234") { isOk ->
-                                if (isOk) showSettingsSheet = true
-                            }
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Ajustes del Negocio",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = { shiftViewModel.logoutEmployee() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Cerrar Sesión",
-                            tint = AppleRed
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -150,21 +82,32 @@ fun PosHomeScreen(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Sales.route,
+            startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Sales.route) { SalesCatalogScreen() }
-            composable(Screen.Tables.route) { TablesScreen() }
-            composable(Screen.Customers.route) { CustomersScreen() }
-            composable(Screen.Inventory.route) { InventoryScreen() }
-            composable(Screen.Reports.route) { ReportsScreen() }
-        }
-    }
+            composable(Screen.Home.route) {
+                DashboardHomeScreen(
+                    onNavigateToProducts = { navController.navigate(Screen.Products.route) },
+                    onNavigateToNewProduct = { navController.navigate(Screen.Products.route) },
+                    onNavigateToSale = { navController.navigate(Screen.Sale.route) },
+                    onNavigateToCustomers = { navController.navigate("customers") },
+                    onNavigateToEmployees = { navController.navigate("employees") },
+                    onNavigateToTables = { navController.navigate("tables") }
+                )
+            }
+            composable(Screen.Products.route) { InventoryScreen() }
+            composable(Screen.Sale.route) { SalesCatalogScreen() }
+            composable(Screen.Transactions.route) { ReportsScreen() }
+            composable(Screen.More.route) {
+                MoreMenuScreen(
+                    onNavigateToRoute = { route -> navController.navigate(route) },
+                    onLogoutGlobal = onLogoutGlobal
+                )
+            }
 
-    if (showSettingsSheet) {
-        SettingsScreen(
-            onDismiss = { showSettingsSheet = false },
-            onLogoutGlobal = onLogoutGlobal
-        )
+            composable("customers") { CustomersScreen() }
+            composable("tables") { TablesScreen() }
+            composable("employees") { ReportsScreen() }
+        }
     }
 }
