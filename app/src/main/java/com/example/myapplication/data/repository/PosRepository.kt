@@ -45,7 +45,8 @@ interface PosRepository {
 
 @Singleton
 class PosRepositoryImpl @Inject constructor(
-    private val dao: PosDao
+    private val dao: PosDao,
+    private val syncManager: com.example.myapplication.data.remote.FirestoreSyncManager
 ) : PosRepository {
 
     override fun getProducts(): Flow<List<Product>> {
@@ -286,7 +287,6 @@ class PosRepositoryImpl @Inject constructor(
         )
 
         // Si venía de mesa, actualizamos el status de la mesa a AVAILABLE
-        // ya que el Transaction del Dao solo limpió los items por simplicidad.
         if (tableIdToClear != null) {
             val tables = dao.getAllTables().first()
             val currentTable = tables.find { it.id == tableIdToClear }
@@ -295,15 +295,30 @@ class PosRepositoryImpl @Inject constructor(
             }
         }
 
+        // 5. Sincronizar en la Nube (Cloud Firestore)
+        try {
+            syncManager.syncOrderToCloud(order)
+            for (item in order.items) {
+                val updatedStockProduct = item.product.copy(
+                    stock = (item.product.stock - item.quantity).coerceAtLeast(0)
+                )
+                syncManager.syncProductToCloud(updatedStockProduct)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         return order
     }
 
     override suspend fun addProduct(product: Product) {
         dao.insertProduct(product.toEntity())
+        try { syncManager.syncProductToCloud(product) } catch (e: Exception) { e.printStackTrace() }
     }
 
     override suspend fun updateProduct(product: Product) {
         dao.updateProduct(product.toEntity())
+        try { syncManager.syncProductToCloud(product) } catch (e: Exception) { e.printStackTrace() }
     }
 
     override suspend fun deleteProduct(productId: String) {

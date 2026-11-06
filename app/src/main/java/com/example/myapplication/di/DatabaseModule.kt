@@ -33,8 +33,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun providePosRepository(dao: PosDao): PosRepository {
-        return PosRepositoryImpl(dao)
+    fun providePosRepository(
+        dao: PosDao,
+        syncManager: com.example.myapplication.data.remote.FirestoreSyncManager
+    ): PosRepository {
+        return PosRepositoryImpl(dao, syncManager)
     }
 
     @Provides
