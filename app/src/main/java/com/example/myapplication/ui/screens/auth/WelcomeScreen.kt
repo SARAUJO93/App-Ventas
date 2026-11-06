@@ -1,27 +1,75 @@
 package com.example.myapplication.ui.screens.auth
 
-import androidx.compose.foundation.Image
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import com.example.myapplication.ui.theme.AppleBlue
+import com.example.myapplication.viewmodel.AuthViewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 @Composable
 fun WelcomeScreen(
-    onContinueWithGoogle: () -> Unit,
+    authViewModel: AuthViewModel,
     onContinueWithEmail: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = CredentialManager.create(context)
+
+    fun launchGoogleSignIn() {
+        val webClientId = try {
+            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+            if (resId != 0) context.getString(resId) else "636959307320-dummy.apps.googleusercontent.com"
+        } catch (e: Exception) {
+            "636959307320-dummy.apps.googleusercontent.com"
+        }
+
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(webClientId)
+            .setAutoSelectEnabled(false)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        coroutineScope.launch {
+            try {
+                val result = credentialManager.getCredential(context = context, request = request)
+                val credential = result.credential
+                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    authViewModel.loginWithGoogleIdToken(googleIdTokenCredential.idToken)
+                }
+            } catch (e: GetCredentialException) {
+                Toast.makeText(context, "Inicio con Google cancelado o requiere activar Google en Firebase Console", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     val backgroundBrush = Brush.verticalGradient(
         colors = listOf(
             Color(0xFFF3F7FA),
@@ -81,7 +129,7 @@ fun WelcomeScreen(
 
         // Botón Google
         Button(
-            onClick = onContinueWithGoogle,
+            onClick = { launchGoogleSignIn() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

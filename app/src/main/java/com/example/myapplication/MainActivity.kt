@@ -66,7 +66,7 @@ fun RootNavigationGraph(
         
         composable("welcome") {
             WelcomeScreen(
-                onContinueWithGoogle = { authViewModel.loginWithGoogle() },
+                authViewModel = authViewModel,
                 onContinueWithEmail = { navController.navigate("email_auth") }
             )
         }

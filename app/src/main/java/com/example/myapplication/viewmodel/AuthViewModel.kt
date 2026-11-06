@@ -2,8 +2,11 @@ package com.example.myapplication.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,34 +23,58 @@ sealed class AuthState {
 @HiltViewModel
 class AuthViewModel @Inject constructor() : ViewModel() {
 
+    private val auth: FirebaseAuth get() = Firebase.auth
+
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    private val _currentUserEmail = MutableStateFlow<String?>(null)
+    private val _currentUserEmail = MutableStateFlow<String?>(auth.currentUser?.email)
     val currentUserEmail: StateFlow<String?> = _currentUserEmail.asStateFlow()
+
+    init {
+        auth.addAuthStateListener { firebaseAuth ->
+            _currentUserEmail.value = firebaseAuth.currentUser?.email
+        }
+    }
 
     fun loginWithEmail(email: String, pass: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            // Simulación de delay de red (Firebase Auth)
-            delay(1500)
 
-            if (email.contains("@") && pass.length >= 6) {
-                _currentUserEmail.value = email
-                _authState.value = AuthState.Success
-            } else {
-                _authState.value = AuthState.Error("Credenciales inválidas. Verifica tu correo y contraseña.")
-            }
+            auth.signInWithEmailAndPassword(email, pass)
+                .addOnSuccessListener { result ->
+                    _currentUserEmail.value = result.user?.email
+                    _authState.value = AuthState.Success
+                }
+                .addOnFailureListener { _ ->
+                    // Si el usuario no existe o las credenciales no son válidas en sign-in, intentamos registrarlo
+                    auth.createUserWithEmailAndPassword(email, pass)
+                        .addOnSuccessListener { createResult ->
+                            _currentUserEmail.value = createResult.user?.email
+                            _authState.value = AuthState.Success
+                        }
+                        .addOnFailureListener { createError ->
+                            val msg = createError.localizedMessage ?: "Error de autenticación."
+                            _authState.value = AuthState.Error(msg)
+                        }
+                }
         }
     }
 
-    fun loginWithGoogle() {
+    fun loginWithGoogleIdToken(idToken: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            // Simulación de apertura de popup de Google y respuesta
-            delay(1000)
-            _currentUserEmail.value = "usuario.google@gmail.com"
-            _authState.value = AuthState.Success
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+
+            auth.signInWithCredential(credential)
+                .addOnSuccessListener { result ->
+                    _currentUserEmail.value = result.user?.email
+                    _authState.value = AuthState.Success
+                }
+                .addOnFailureListener { e ->
+                    val msg = e.localizedMessage ?: "Error al autenticar con Google."
+                    _authState.value = AuthState.Error(msg)
+                }
         }
     }
 
@@ -56,6 +83,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
     }
 
     fun logout() {
+        auth.signOut()
         _currentUserEmail.value = null
         _authState.value = AuthState.Idle
     }
