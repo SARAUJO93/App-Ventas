@@ -1,7 +1,7 @@
 package com.novapos.app.model
 
 data class BusinessSettings(
-    val businessName: String = "NOVA POS CAFE",
+    val businessName: String = "",
     val address: String = "Av. Principal 123, Ciudad",
     val taxId: String = "NOVA123456789",
     val phone: String = "555-1234-567",

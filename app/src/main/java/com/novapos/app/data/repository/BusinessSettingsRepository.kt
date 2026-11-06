@@ -41,8 +41,11 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
 
     private fun loadSettings(userEmail: String?): BusinessSettings {
         val prefs = getPrefsForUser(userEmail ?: currentEmail)
+        val name = prefs.getString("businessName", "") ?: ""
+        val isFirst = prefs.getBoolean("isFirstLaunch", true) || name.isBlank()
+
         return BusinessSettings(
-            businessName = prefs.getString("businessName", "") ?: "",
+            businessName = name,
             address = prefs.getString("address", "Av. Principal 123, Ciudad") ?: "Av. Principal 123, Ciudad",
             taxId = prefs.getString("taxId", "NOVA123456789") ?: "NOVA123456789",
             phone = prefs.getString("phone", "555-1234-567") ?: "555-1234-567",
@@ -50,7 +53,7 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
             autoPrintReceipt = prefs.getBoolean("autoPrintReceipt", false),
             paperSize = prefs.getString("paperSize", "58mm") ?: "58mm",
             printerName = prefs.getString("printerName", "Impresora Térmica Bluetooth") ?: "Impresora Térmica Bluetooth",
-            isFirstLaunch = prefs.getBoolean("isFirstLaunch", true),
+            isFirstLaunch = isFirst,
             businessSector = prefs.getString("businessSector", "General") ?: "General"
         )
     }

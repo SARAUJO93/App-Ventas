@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -54,39 +55,49 @@ fun RootNavigationGraph(
     val navController = rememberNavController()
     val currentUserEmail by authViewModel.currentUserEmail.collectAsState()
 
-    androidx.compose.runtime.LaunchedEffect(currentUserEmail) {
+    LaunchedEffect(currentUserEmail) {
         settingsViewModel.loadUserSettings(currentUserEmail)
     }
 
     val settings by settingsViewModel.businessSettings.collectAsState()
 
-    // Navegación automática al iniciar sesión según si es la primera vez del usuario
-    androidx.compose.runtime.LaunchedEffect(currentUserEmail, settings.isFirstLaunch) {
+    // Navegación automática e ininterrumpida
+    LaunchedEffect(currentUserEmail, settings.isFirstLaunch, settings.businessName) {
         if (currentUserEmail != null) {
             val currentRoute = navController.currentBackStackEntry?.destination?.route
-            if (currentRoute == "welcome" || currentRoute == "email_auth") {
-                if (settings.isFirstLaunch) {
+            val needsOnboarding = settings.isFirstLaunch || settings.businessName.isBlank()
+
+            if (needsOnboarding) {
+                if (currentRoute != "business_name" && currentRoute != "onboarding_sector" && currentRoute != "onboarding_challenges") {
                     navController.navigate("business_name") {
-                        popUpTo("welcome") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
-                } else {
+                }
+            } else {
+                if (currentRoute == "welcome" || currentRoute == "email_auth" || currentRoute == "business_name" || currentRoute == "onboarding_sector" || currentRoute == "onboarding_challenges" || currentRoute == null) {
                     navController.navigate("main_app") {
-                        popUpTo("welcome") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
+                }
+            }
+        } else {
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            if (currentRoute != "welcome" && currentRoute != "email_auth") {
+                navController.navigate("welcome") {
+                    popUpTo(0) { inclusive = true }
                 }
             }
         }
     }
 
-    // Determinamos el startDestination basado en el estado
     val startDest = when {
         currentUserEmail == null -> "welcome"
-        settings.isFirstLaunch -> "business_name"
+        settings.isFirstLaunch || settings.businessName.isBlank() -> "business_name"
         else -> "main_app"
     }
 
     NavHost(navController = navController, startDestination = startDest) {
-        
+
         composable("welcome") {
             WelcomeScreen(
                 authViewModel = authViewModel,
@@ -121,7 +132,7 @@ fun RootNavigationGraph(
                 onNext = { navController.navigate("onboarding_challenges") }
             )
         }
-        
+
         composable("onboarding_challenges") {
             val selectedChallenges by onboardingViewModel.selectedChallenges.collectAsState()
             ChallengesScreen(
@@ -130,14 +141,13 @@ fun RootNavigationGraph(
                 onComplete = {
                     onboardingViewModel.completeOnboarding {
                         navController.navigate("main_app") {
-                            popUpTo("business_name") { inclusive = true }
-                            popUpTo("welcome") { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
                     }
                 }
             )
         }
-        
+
         composable("main_app") {
             PosHomeScreen(
                 onLogoutGlobal = {

@@ -109,7 +109,7 @@ fun PinLockScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = businessSettings.businessName,
+                text = businessSettings.businessName.ifBlank { "NOVA POS" },
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
