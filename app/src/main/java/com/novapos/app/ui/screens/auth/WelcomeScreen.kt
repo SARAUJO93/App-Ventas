@@ -63,9 +63,9 @@ fun WelcomeScreen(
                     authViewModel.loginWithGoogleIdToken(googleIdTokenCredential.idToken)
                 }
             } catch (e: GetCredentialException) {
-                Toast.makeText(context, "Inicio con Google cancelado o requiere activar Google en Firebase Console", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Inicio de sesión cancelado o requiere actualizar a v3.5.0 en tu dispositivo", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Toast.makeText(context, e.message ?: "Error de autenticación", Toast.LENGTH_SHORT).show()
             }
         }
     }

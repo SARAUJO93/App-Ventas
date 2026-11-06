@@ -17,7 +17,7 @@
           "client_id": "636959307320-lvee0g0e3tsg05fpoh4fdqs087pq7ofn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.myapplication",
+            "package_name": "com.novapos.app",
             "certificate_hash": "1e057d816def245d21861d47437101b699b0862a"
           }
         },
