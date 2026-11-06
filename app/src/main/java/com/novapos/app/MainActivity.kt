@@ -61,35 +61,7 @@ fun RootNavigationGraph(
 
     val settings by settingsViewModel.businessSettings.collectAsState()
 
-    // Navegación automática e ininterrumpida
-    LaunchedEffect(currentUserEmail, settings.isFirstLaunch, settings.businessName) {
-        if (currentUserEmail != null) {
-            val currentRoute = navController.currentBackStackEntry?.destination?.route
-            val needsOnboarding = settings.isFirstLaunch || settings.businessName.isBlank()
-
-            if (needsOnboarding) {
-                if (currentRoute != "business_name" && currentRoute != "onboarding_sector" && currentRoute != "onboarding_challenges") {
-                    navController.navigate("business_name") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            } else {
-                if (currentRoute == "welcome" || currentRoute == "email_auth" || currentRoute == "business_name" || currentRoute == "onboarding_sector" || currentRoute == "onboarding_challenges" || currentRoute == null) {
-                    navController.navigate("main_app") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            }
-        } else {
-            val currentRoute = navController.currentBackStackEntry?.destination?.route
-            if (currentRoute != "welcome" && currentRoute != "email_auth") {
-                navController.navigate("welcome") {
-                    popUpTo(0) { inclusive = true }
-                }
-            }
-        }
-    }
-
+    // Determinamos el startDestination basado en el estado actual de la cuenta
     val startDest = when {
         currentUserEmail == null -> "welcome"
         settings.isFirstLaunch || settings.businessName.isBlank() -> "business_name"
@@ -103,6 +75,15 @@ fun RootNavigationGraph(
                 authViewModel = authViewModel,
                 onContinueWithEmail = { navController.navigate("email_auth") }
             )
+            // Si el usuario ya está logueado pero entra a welcome, navegamos según su onboarding
+            LaunchedEffect(currentUserEmail, settings.isFirstLaunch, settings.businessName) {
+                if (currentUserEmail != null) {
+                    val dest = if (settings.isFirstLaunch || settings.businessName.isBlank()) "business_name" else "main_app"
+                    navController.navigate(dest) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
         }
 
         composable("email_auth") {
@@ -110,7 +91,8 @@ fun RootNavigationGraph(
                 authViewModel = authViewModel,
                 onBack = { navController.popBackStack() },
                 onSuccess = {
-                    navController.navigate("business_name") {
+                    val dest = if (settings.isFirstLaunch || settings.businessName.isBlank()) "business_name" else "main_app"
+                    navController.navigate(dest) {
                         popUpTo("welcome") { inclusive = true }
                     }
                 }
