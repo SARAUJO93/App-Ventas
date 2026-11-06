@@ -35,7 +35,9 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PosHomeScreen() {
+fun PosHomeScreen(
+    onLogoutGlobal: () -> Unit
+) {
     val shiftViewModel: ShiftViewModel = hiltViewModel()
     val settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel()
     
@@ -154,7 +156,8 @@ fun PosHomeScreen() {
 
     if (showSettingsSheet) {
         SettingsScreen(
-            onDismiss = { showSettingsSheet = false }
+            onDismiss = { showSettingsSheet = false },
+            onLogoutGlobal = onLogoutGlobal
         )
     }
 }

@@ -54,4 +54,9 @@ class AuthViewModel @Inject constructor() : ViewModel() {
     fun resetState() {
         _authState.value = AuthState.Idle
     }
+
+    fun logout() {
+        _currentUserEmail.value = null
+        _authState.value = AuthState.Idle
+    }
 }

@@ -116,7 +116,14 @@ fun RootNavigationGraph(
         }
         
         composable("main_app") {
-            PosHomeScreen()
+            PosHomeScreen(
+                onLogoutGlobal = {
+                    authViewModel.logout()
+                    navController.navigate("welcome") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

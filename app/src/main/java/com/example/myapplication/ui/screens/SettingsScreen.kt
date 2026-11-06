@@ -27,7 +27,8 @@ import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onLogoutGlobal: () -> Unit
 ) {
     val currentSettings by settingsViewModel.businessSettings.collectAsState()
 
@@ -208,14 +209,17 @@ fun SettingsScreen(
                             Text("Acerca de Nova POS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
 
-                        Text("Versión instalada: v1.0.0 (Build 1)", style = MaterialTheme.typography.bodyMedium)
+                        val versionName = com.example.myapplication.BuildConfig.VERSION_NAME
+                        val versionCode = com.example.myapplication.BuildConfig.VERSION_CODE
+
+                        Text("Versión instalada: v$versionName (Build $versionCode)", style = MaterialTheme.typography.bodyMedium)
                         Text("Base de Datos Room v7 • Hilt DI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedButton(
                             onClick = {
-                                settingsViewModel.checkForUpdates()
+                                settingsViewModel.checkForUpdates(versionName)
                                 showUpdateDialog = true
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -247,6 +251,16 @@ fun SettingsScreen(
                     isSavedSuccess = true
                 }
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = onLogoutGlobal,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Cerrar Sesión Global (Cambiar Cuenta)")
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }

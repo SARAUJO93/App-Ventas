@@ -31,10 +31,9 @@ class SettingsAndUpdateViewModel @Inject constructor(
         settingsRepository.saveSettings(newSettings)
     }
 
-    fun checkForUpdates() {
+    fun checkForUpdates(currentVersion: String) {
         viewModelScope.launch {
             _updateState.value = UpdateState.Checking
-            val currentVersion = "1.0.0"
             val info = updateRepository.checkForUpdate(currentVersion)
             if (info.isUpdateAvailable) {
                 _updateState.value = UpdateState.UpdateAvailable(info)
