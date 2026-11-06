@@ -11,23 +11,38 @@ import javax.inject.Singleton
 
 interface BusinessSettingsRepository {
     val settings: StateFlow<BusinessSettings>
+    fun loadUserSettings(userEmail: String?)
     fun saveSettings(newSettings: BusinessSettings)
 }
 
 @Singleton
 class BusinessSettingsRepositoryImpl @Inject constructor(
-    context: Context
+    private val context: Context
 ) : BusinessSettingsRepository {
 
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences("nova_pos_settings", Context.MODE_PRIVATE)
+    private var currentEmail: String? = null
 
-    private val _settings = MutableStateFlow(loadSettings())
+    private fun getPrefsForUser(userEmail: String?): SharedPreferences {
+        val cleanName = if (!userEmail.isNullOrBlank()) {
+            "nova_pos_settings_" + userEmail.replace(".", "_").replace("@", "_at_")
+        } else {
+            "nova_pos_settings_default"
+        }
+        return context.getSharedPreferences(cleanName, Context.MODE_PRIVATE)
+    }
+
+    private val _settings = MutableStateFlow(loadSettings(null))
     override val settings: StateFlow<BusinessSettings> = _settings.asStateFlow()
 
-    private fun loadSettings(): BusinessSettings {
+    override fun loadUserSettings(userEmail: String?) {
+        currentEmail = userEmail
+        _settings.value = loadSettings(userEmail)
+    }
+
+    private fun loadSettings(userEmail: String?): BusinessSettings {
+        val prefs = getPrefsForUser(userEmail ?: currentEmail)
         return BusinessSettings(
-            businessName = prefs.getString("businessName", "NOVA POS CAFE") ?: "NOVA POS CAFE",
+            businessName = prefs.getString("businessName", "") ?: "",
             address = prefs.getString("address", "Av. Principal 123, Ciudad") ?: "Av. Principal 123, Ciudad",
             taxId = prefs.getString("taxId", "NOVA123456789") ?: "NOVA123456789",
             phone = prefs.getString("phone", "555-1234-567") ?: "555-1234-567",
@@ -41,6 +56,7 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
     }
 
     override fun saveSettings(newSettings: BusinessSettings) {
+        val prefs = getPrefsForUser(currentEmail)
         prefs.edit()
             .putString("businessName", newSettings.businessName)
             .putString("address", newSettings.address)

@@ -52,8 +52,31 @@ fun RootNavigationGraph(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
-    val settings by settingsViewModel.businessSettings.collectAsState()
     val currentUserEmail by authViewModel.currentUserEmail.collectAsState()
+
+    androidx.compose.runtime.LaunchedEffect(currentUserEmail) {
+        settingsViewModel.loadUserSettings(currentUserEmail)
+    }
+
+    val settings by settingsViewModel.businessSettings.collectAsState()
+
+    // Navegación automática al iniciar sesión según si es la primera vez del usuario
+    androidx.compose.runtime.LaunchedEffect(currentUserEmail, settings.isFirstLaunch) {
+        if (currentUserEmail != null) {
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            if (currentRoute == "welcome" || currentRoute == "email_auth") {
+                if (settings.isFirstLaunch) {
+                    navController.navigate("business_name") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                } else {
+                    navController.navigate("main_app") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
 
     // Determinamos el startDestination basado en el estado
     val startDest = when {

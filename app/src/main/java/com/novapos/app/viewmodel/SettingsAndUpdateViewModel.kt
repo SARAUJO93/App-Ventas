@@ -27,6 +27,10 @@ class SettingsAndUpdateViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
 
+    fun loadUserSettings(userEmail: String?) {
+        settingsRepository.loadUserSettings(userEmail)
+    }
+
     fun saveBusinessSettings(newSettings: BusinessSettings) {
         settingsRepository.saveSettings(newSettings)
     }
