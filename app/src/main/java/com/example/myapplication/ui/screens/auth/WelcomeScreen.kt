@@ -39,9 +39,9 @@ fun WelcomeScreen(
     fun launchGoogleSignIn() {
         val webClientId = try {
             val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-            if (resId != 0) context.getString(resId) else "636959307320-dummy.apps.googleusercontent.com"
+            if (resId != 0) context.getString(resId) else "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
         } catch (e: Exception) {
-            "636959307320-dummy.apps.googleusercontent.com"
+            "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
         }
 
         val googleIdOption = GetGoogleIdOption.Builder()
