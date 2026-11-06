@@ -53,11 +53,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.novapos.app"
+        applicationId = "com.example.myapplication"
         minSdk = 24
         targetSdk = 34
-        versionCode = 28
-        versionName = "5.0.0"
+        versionCode = 29
+        versionName = "5.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
