@@ -1,6 +1,8 @@
 package com.novapos.app.ui.screens.auth
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,11 +22,13 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialException
-import com.novapos.app.ui.theme.AppleBlue
-import com.novapos.app.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.novapos.app.ui.theme.AppleBlue
+import com.novapos.app.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -36,14 +40,37 @@ fun WelcomeScreen(
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = CredentialManager.create(context)
 
-    fun launchGoogleSignIn() {
-        val webClientId = try {
-            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-            if (resId != 0) context.getString(resId) else "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
-        } catch (e: Exception) {
-            "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
-        }
+    val webClientId = "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
 
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+            if (idToken != null) {
+                authViewModel.loginWithGoogleIdToken(idToken)
+            } else {
+                Toast.makeText(context, "No se pudo obtener el token de Google", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: ApiException) {
+            if (e.statusCode != 12501) { // 12501 = Cancelado por el usuario
+                Toast.makeText(context, "Error Google Sign-In (${e.statusCode}): ${e.localizedMessage ?: "Credenciales no válidas"}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun launchLegacyGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+    }
+
+    fun launchGoogleSignIn() {
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(webClientId)
@@ -61,11 +88,11 @@ fun WelcomeScreen(
                 if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     authViewModel.loginWithGoogleIdToken(googleIdTokenCredential.idToken)
+                } else {
+                    launchLegacyGoogleSignIn()
                 }
-            } catch (e: GetCredentialException) {
-                Toast.makeText(context, "Inicio de sesión cancelado o requiere actualizar a v3.5.0 en tu dispositivo", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                Toast.makeText(context, e.message ?: "Error de autenticación", Toast.LENGTH_SHORT).show()
+                launchLegacyGoogleSignIn()
             }
         }
     }
