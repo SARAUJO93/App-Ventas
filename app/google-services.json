@@ -41,6 +41,35 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:636959307320:android:d6a048166963ad0fee18cd",
+        "android_client_info": {
+          "package_name": "com.novapos.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqvk_l4wBIKxewEVS3KFeJSFJCOnF2nFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"
