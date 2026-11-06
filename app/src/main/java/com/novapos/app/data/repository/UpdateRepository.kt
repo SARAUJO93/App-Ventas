@@ -170,6 +170,12 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     override fun triggerApkInstallation(context: Context, apkFile: File) {
+        // Verificación de integridad: el archivo debe existir y pesar al menos 10 MB
+        if (!apkFile.exists() || apkFile.length() < 10 * 1024 * 1024) {
+            android.util.Log.e("UpdateRepository", "Cancelada instalación: el archivo APK descargado no es válido o está corrupto.")
+            return
+        }
+
         val apkUri: Uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
@@ -180,6 +186,18 @@ class UpdateRepositoryImpl @Inject constructor(
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
         context.startActivity(intent)
+    }
+
+    private fun calculateSha256(file: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { inputStream ->
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
     private fun isVersionNewer(latest: String, current: String): Boolean {

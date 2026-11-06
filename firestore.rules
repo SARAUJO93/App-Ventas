@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Aislamiento estricto de datos por Firebase Auth UID
+    match /businesses/{businessUid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == businessUid;
+    }
+  }
+}

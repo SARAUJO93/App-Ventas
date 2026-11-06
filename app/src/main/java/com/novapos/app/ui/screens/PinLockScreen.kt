@@ -38,7 +38,14 @@ fun PinLockScreen(
 
     val businessSettings by settingsViewModel.businessSettings.collectAsState()
 
+    val lockoutTime by shiftViewModel.lockoutTimeRemaining.collectAsState()
+
     fun handleKeyPress(digit: String) {
+        if (lockoutTime > 0) {
+            errorMessage = "Bloqueado temporalmente. Espera $lockoutTime seg."
+            return
+        }
+
         if (enteredPin.length < 4) {
             val newPin = enteredPin + digit
             enteredPin = newPin
@@ -51,7 +58,12 @@ fun PinLockScreen(
                         errorMessage = ""
                     },
                     onError = {
-                        errorMessage = "PIN incorrecto. Inténtalo de nuevo."
+                        val remaining = shiftViewModel.lockoutTimeRemaining.value
+                        errorMessage = if (remaining > 0) {
+                            "Demasiados intentos fallidos. Bloqueado por $remaining seg."
+                        } else {
+                            "PIN incorrecto. Inténtalo de nuevo."
+                        }
                         enteredPin = ""
                     }
                 )

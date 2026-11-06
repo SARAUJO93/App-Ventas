@@ -21,3 +21,6 @@ keystore.properties
 upload*.ps1
 temp_upload*.ps1
 
+# Temporary & Report scratch files
+.scratch/
+

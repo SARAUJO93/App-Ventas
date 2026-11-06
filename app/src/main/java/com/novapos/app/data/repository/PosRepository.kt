@@ -118,7 +118,10 @@ class PosRepositoryImpl @Inject constructor(
     }
 
     override suspend fun authenticatePin(pin: String): EmployeeEntity? {
-        return dao.getEmployeeByPin(pin)
+        val employees = dao.getAllEmployees().first()
+        return employees.find { emp ->
+            com.novapos.app.util.SecurityUtils.verifyPin(pin, emp.pin)
+        }
     }
 
     override suspend fun openShift(cashierName: String, initialCash: Double) {
@@ -421,8 +424,8 @@ class PosRepositoryImpl @Inject constructor(
         val existingEmployees = dao.getAllEmployees().first()
         if (existingEmployees.isEmpty()) {
             val defaultEmployees = listOf(
-                EmployeeEntity("1", "Administrador", "1234", "ADMIN"),
-                EmployeeEntity("2", "Cajero Principal", "0000", "CASHIER")
+                EmployeeEntity("1", "Administrador", com.novapos.app.util.SecurityUtils.hashPin("1234"), "ADMIN"),
+                EmployeeEntity("2", "Cajero Principal", com.novapos.app.util.SecurityUtils.hashPin("0000"), "CASHIER")
             )
             dao.insertEmployees(defaultEmployees)
         }

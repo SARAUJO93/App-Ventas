@@ -17,17 +17,12 @@ class FirestoreSyncManager @Inject constructor() {
     private val firestore: FirebaseFirestore get() = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth get() = FirebaseAuth.getInstance()
 
-    private val businessId: String
-        get() {
-            val userEmail: String? = auth.currentUser?.email
-            return if (!userEmail.isNullOrBlank()) {
-                userEmail.replace(".", "_").replace("@", "_at_")
-            } else {
-                "default_business"
-            }
-        }
+    private val businessUid: String?
+        get() = auth.currentUser?.uid
 
     fun syncOrderToCloud(order: Order) {
+        val uid = businessUid ?: return
+
         val orderMap = hashMapOf(
             "id" to order.id,
             "subtotal" to order.subtotal,
@@ -45,7 +40,7 @@ class FirestoreSyncManager @Inject constructor() {
         )
 
         firestore.collection("businesses")
-            .document(businessId)
+            .document(uid)
             .collection("orders")
             .document(order.id)
             .set(orderMap)
@@ -58,6 +53,8 @@ class FirestoreSyncManager @Inject constructor() {
     }
 
     fun syncProductToCloud(product: Product) {
+        val uid = businessUid ?: return
+
         val productMap = hashMapOf(
             "id" to product.id,
             "name" to product.name,
@@ -69,7 +66,7 @@ class FirestoreSyncManager @Inject constructor() {
         )
 
         firestore.collection("businesses")
-            .document(businessId)
+            .document(uid)
             .collection("products")
             .document(product.id)
             .set(productMap)
@@ -82,8 +79,10 @@ class FirestoreSyncManager @Inject constructor() {
     }
 
     fun deductStockAtomicInCloud(productId: String, quantityToDeduct: Int) {
+        val uid = businessUid ?: return
+
         firestore.collection("businesses")
-            .document(businessId)
+            .document(uid)
             .collection("products")
             .document(productId)
             .update("stock", com.google.firebase.firestore.FieldValue.increment(-quantityToDeduct.toLong()))
@@ -96,8 +95,15 @@ class FirestoreSyncManager @Inject constructor() {
     }
 
     fun listenRemoteProducts(): Flow<List<Product>> = callbackFlow {
+        val uid = businessUid
+        if (uid == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+
         val listener: ListenerRegistration = firestore.collection("businesses")
-            .document(businessId)
+            .document(uid)
             .collection("products")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {

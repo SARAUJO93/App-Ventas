@@ -1,7 +1,0 @@
-{
-  "12": {
-    "action": "VERIFIED",
-    "confidence": "High",
-    "critic_justification": "Verified. AuthViewModel allows account creation via Firebase Auth (createUserWithEmailAndPassword and Google Sign-In), but neither AuthViewModel nor SettingsScreen provides a feature or UI control to delete user accounts or request data erasure as required by Play Policy."
-  }
-}

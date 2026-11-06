@@ -29,15 +29,43 @@ class ShiftViewModel @Inject constructor(
     private val _currentEmployee = MutableStateFlow<EmployeeEntity?>(null)
     val currentEmployee: StateFlow<EmployeeEntity?> = _currentEmployee.asStateFlow()
 
+    private val _failedAttempts = MutableStateFlow(0)
+    val failedAttempts: StateFlow<Int> = _failedAttempts.asStateFlow()
+
+    private val _lockoutTimeRemaining = MutableStateFlow(0)
+    val lockoutTimeRemaining: StateFlow<Int> = _lockoutTimeRemaining.asStateFlow()
+
     fun loginWithPin(pin: String, onSuccess: () -> Unit, onError: () -> Unit) {
+        if (_lockoutTimeRemaining.value > 0) {
+            onError()
+            return
+        }
+
         viewModelScope.launch {
             val emp = repository.authenticatePin(pin)
             if (emp != null) {
+                _failedAttempts.value = 0
                 _currentEmployee.value = emp
                 onSuccess()
             } else {
+                val attempts = _failedAttempts.value + 1
+                _failedAttempts.value = attempts
+                if (attempts >= 5) {
+                    startLockoutTimer()
+                }
                 onError()
             }
+        }
+    }
+
+    private fun startLockoutTimer() {
+        viewModelScope.launch {
+            _lockoutTimeRemaining.value = 30
+            while (_lockoutTimeRemaining.value > 0) {
+                kotlinx.coroutines.delay(1000)
+                _lockoutTimeRemaining.value -= 1
+            }
+            _failedAttempts.value = 0
         }
     }
 
