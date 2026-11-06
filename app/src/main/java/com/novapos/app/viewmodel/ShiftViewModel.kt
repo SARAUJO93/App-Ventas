@@ -102,6 +102,10 @@ class ShiftViewModel @Inject constructor(
     fun createAdminPin(pin: String) {
         viewModelScope.launch {
             repository.createAdminEmployee("Administrador", pin)
+            val emp = repository.authenticatePin(pin)
+            if (emp != null) {
+                _currentEmployee.value = emp
+            }
         }
     }
 
