@@ -68,5 +68,6 @@ class FakePosRepository : PosRepository {
     override suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod) {}
     override suspend fun addTransaction(type: String, amount: Double, category: String, note: String) {}
     override suspend fun deductStock(cartItems: List<CartItem>) {}
+    override suspend fun createAdminEmployee(adminName: String, pin: String) {}
     override suspend fun populateInitialData() {}
 }

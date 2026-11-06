@@ -177,7 +177,8 @@ data class OrderEntity(
     val paymentMethod: String?,
     val customerId: String?,
     val customerName: String?,
-    val serviceType: String = "DINE_IN"
+    val serviceType: String = "DINE_IN",
+    val isSynced: Boolean = false
 )
 
 @Entity(tableName = "order_items")

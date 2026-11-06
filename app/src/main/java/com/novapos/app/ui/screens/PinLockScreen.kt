@@ -123,7 +123,7 @@ fun PinLockScreen(
             )
 
             Text(
-                text = "(Admin: 1234 • Cajero: 0000)",
+                text = "Ingresa tu clave de acceso personal",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 2.dp, bottom = 24.dp)

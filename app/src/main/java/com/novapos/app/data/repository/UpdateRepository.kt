@@ -19,7 +19,8 @@ data class UpdateInfo(
     val latestVersion: String,
     val downloadUrl: String,
     val releaseNotes: String,
-    val isUpdateAvailable: Boolean
+    val isUpdateAvailable: Boolean,
+    val expectedSha256: String? = null
 )
 
 sealed class UpdateState {
@@ -70,10 +71,16 @@ class UpdateRepositoryImpl @Inject constructor(
                 val notes = json.optString("body", "Mejoras de rendimiento y nuevas características.")
 
                 var apkUrl = "https://github.com/SARAUJO93/App-Ventas/releases/download/v$tagName/app-debug.apk"
+                var expectedDigest: String? = null
+
                 val assets = json.optJSONArray("assets")
                 if (assets != null && assets.length() > 0) {
                     val assetObj = assets.getJSONObject(0)
                     apkUrl = assetObj.optString("browser_download_url", apkUrl)
+                    val rawDigest = assetObj.optString("digest", "")
+                    if (rawDigest.isNotEmpty()) {
+                        expectedDigest = rawDigest.replace("sha256:", "")
+                    }
                 }
 
                 val isNewer = isVersionNewer(tagName, currentVersionName)
@@ -81,7 +88,8 @@ class UpdateRepositoryImpl @Inject constructor(
                     latestVersion = tagName,
                     downloadUrl = apkUrl,
                     releaseNotes = notes,
-                    isUpdateAvailable = isNewer
+                    isUpdateAvailable = isNewer,
+                    expectedSha256 = expectedDigest
                 )
                 cachedUpdateInfo = info
                 lastCheckTimestamp = now
@@ -170,19 +178,26 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     override fun triggerApkInstallation(context: Context, apkFile: File) {
-        // 1. Verificación de Integridad y Tamaño de APK
+        // 1. Verificación de Integridad de Archivo
         if (!apkFile.exists() || apkFile.length() < 10 * 1024 * 1024) {
             android.util.Log.e("UpdateRepository", "Cancelada instalación: el archivo APK descargado no es válido o está corrupto.")
             return
         }
 
-        // 2. Verificación de Firma Criptográfica SHA-256
+        // 2. Verificación Comparativa Criptográfica SHA-256
         val calculatedHash = calculateSha256(apkFile)
-        if (calculatedHash.length != 64) {
-            android.util.Log.e("UpdateRepository", "Cancelada instalación: la suma de verificación SHA-256 no es válida.")
-            return
+        val expectedHash = cachedUpdateInfo?.expectedSha256
+
+        if (!expectedHash.isNullOrBlank()) {
+            val cleanExpected = expectedHash.replace("sha256:", "").trim()
+            if (!calculatedHash.equals(cleanExpected, ignoreCase = true)) {
+                android.util.Log.e("UpdateRepository", "ABORTADA INSTALACIÓN: La suma de verificación SHA-256 del APK ($calculatedHash) no coincide con el digest publicado ($cleanExpected).")
+                apkFile.delete()
+                return
+            }
         }
-        android.util.Log.d("UpdateRepository", "Verificación de integridad exitosa SHA-256: $calculatedHash")
+
+        android.util.Log.d("UpdateRepository", "Verificación SHA-256 completada con éxito: $calculatedHash")
 
         val apkUri: Uri = FileProvider.getUriForFile(
             context,

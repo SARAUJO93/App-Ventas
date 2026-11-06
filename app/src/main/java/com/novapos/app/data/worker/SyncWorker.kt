@@ -25,7 +25,56 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            Log.d("SyncWorker", "Sincronización en segundo plano iniciada con conectividad de red activa")
+            Log.d("SyncWorker", "Iniciando procesamiento de cola de ventas offline pendientes...")
+            val db = androidx.room.Room.databaseBuilder(
+                applicationContext,
+                com.novapos.app.data.local.PosDatabase::class.java,
+                "nova_pos_db"
+            ).fallbackToDestructiveMigration().build()
+
+            val dao = db.posDao()
+            val syncManager = FirestoreSyncManager()
+
+            val unsyncedOrders = dao.getUnsyncedOrders()
+            if (unsyncedOrders.isNotEmpty()) {
+                Log.d("SyncWorker", "Se encontraron ${unsyncedOrders.size} órdenes pendientes de sincronizar")
+                for (entity in unsyncedOrders) {
+                    val itemEntities = dao.getOrderItems(entity.id)
+                    val items = itemEntities.map { item ->
+                        com.novapos.app.model.CartItem(
+                            product = com.novapos.app.model.Product(
+                                id = item.productId,
+                                name = item.productName,
+                                price = item.unitPrice,
+                                category = "Venta",
+                                stock = 999,
+                                colorHex = item.colorHex
+                            ),
+                            quantity = item.quantity
+                        )
+                    }
+
+                    val order = Order(
+                        id = entity.id,
+                        items = items,
+                        subtotal = entity.subtotal,
+                        discount = entity.discount,
+                        tax = entity.tax,
+                        tip = entity.tip,
+                        total = entity.total,
+                        status = OrderStatus.valueOf(entity.status),
+                        date = Date(entity.dateTimestamp),
+                        paymentMethod = entity.paymentMethod?.let { PaymentMethod.valueOf(it) },
+                        customerId = entity.customerId,
+                        customerName = entity.customerName,
+                        serviceType = ServiceType.valueOf(entity.serviceType)
+                    )
+
+                    syncManager.syncOrderToCloud(order)
+                    dao.markOrderAsSynced(entity.id)
+                }
+            }
+
             Result.success()
         } catch (e: Exception) {
             Log.e("SyncWorker", "Error en sincronización en segundo plano", e)

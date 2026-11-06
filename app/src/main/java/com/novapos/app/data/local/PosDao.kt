@@ -80,6 +80,12 @@ interface PosDao {
     @Query("SELECT * FROM orders ORDER BY dateTimestamp DESC")
     fun getAllOrders(): Flow<List<OrderEntity>>
 
+    @Query("SELECT * FROM orders WHERE isSynced = 0")
+    suspend fun getUnsyncedOrders(): List<OrderEntity>
+
+    @Query("UPDATE orders SET isSynced = 1 WHERE id = :orderId")
+    suspend fun markOrderAsSynced(orderId: String)
+
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     suspend fun getOrderItems(orderId: String): List<OrderItemEntity>
 

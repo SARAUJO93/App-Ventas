@@ -40,6 +40,7 @@ interface PosRepository {
     suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod)
     suspend fun addTransaction(type: String, amount: Double, category: String, note: String)
     suspend fun deductStock(cartItems: List<CartItem>)
+    suspend fun createAdminEmployee(adminName: String, pin: String)
     suspend fun populateInitialData()
 }
 
@@ -420,16 +421,18 @@ class PosRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun populateInitialData() {
-        val existingEmployees = dao.getAllEmployees().first()
-        if (existingEmployees.isEmpty()) {
-            val defaultEmployees = listOf(
-                EmployeeEntity("1", "Administrador", com.novapos.app.util.SecurityUtils.hashPin("1234"), "ADMIN"),
-                EmployeeEntity("2", "Cajero Principal", com.novapos.app.util.SecurityUtils.hashPin("0000"), "CASHIER")
-            )
-            dao.insertEmployees(defaultEmployees)
-        }
+    override suspend fun createAdminEmployee(adminName: String, pin: String) {
+        val hashed = com.novapos.app.util.SecurityUtils.hashPin(pin)
+        val admin = EmployeeEntity(
+            id = "1",
+            name = if (adminName.isBlank()) "Administrador" else adminName,
+            pin = hashed,
+            role = "ADMIN"
+        )
+        dao.insertEmployees(listOf(admin))
+    }
 
+    override suspend fun populateInitialData() {
         val existingProducts = dao.getAllProducts().first()
         if (existingProducts.isEmpty()) {
             val defaultProducts = listOf(
