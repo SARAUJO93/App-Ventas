@@ -39,39 +39,66 @@ class BusinessSettingsRepositoryImpl @Inject constructor(
         _settings.value = loadSettings(userEmail)
     }
 
+    private fun getFirebaseUserEmail(): String? {
+        return try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun loadSettings(userEmail: String?): BusinessSettings {
-        val prefs = getPrefsForUser(userEmail ?: currentEmail)
-        val name = prefs.getString("businessName", "") ?: ""
-        val isFirst = prefs.getBoolean("isFirstLaunch", true) || name.isBlank()
+        val activeEmail = userEmail ?: currentEmail ?: getFirebaseUserEmail()
+        val userPrefs = getPrefsForUser(activeEmail)
+        val defaultPrefs = getPrefsForUser(null)
+
+        var name = userPrefs.getString("businessName", "") ?: ""
+        if (name.isBlank()) {
+            name = defaultPrefs.getString("businessName", "") ?: ""
+        }
+
+        var isFirst = userPrefs.getBoolean("isFirstLaunch", true)
+        if (name.isBlank()) {
+            isFirst = true
+        }
 
         return BusinessSettings(
             businessName = name,
-            address = prefs.getString("address", "Av. Principal 123, Ciudad") ?: "Av. Principal 123, Ciudad",
-            taxId = prefs.getString("taxId", "NOVA123456789") ?: "NOVA123456789",
-            phone = prefs.getString("phone", "555-1234-567") ?: "555-1234-567",
-            footerNote = prefs.getString("footerNote", "¡GRACIAS POR SU COMPRA!") ?: "¡GRACIAS POR SU COMPRA!",
-            autoPrintReceipt = prefs.getBoolean("autoPrintReceipt", false),
-            paperSize = prefs.getString("paperSize", "58mm") ?: "58mm",
-            printerName = prefs.getString("printerName", "Impresora Térmica Bluetooth") ?: "Impresora Térmica Bluetooth",
+            address = userPrefs.getString("address", defaultPrefs.getString("address", "Av. Principal 123, Ciudad")) ?: "Av. Principal 123, Ciudad",
+            taxId = userPrefs.getString("taxId", defaultPrefs.getString("taxId", "NOVA123456789")) ?: "NOVA123456789",
+            phone = userPrefs.getString("phone", defaultPrefs.getString("phone", "555-1234-567")) ?: "555-1234-567",
+            footerNote = userPrefs.getString("footerNote", defaultPrefs.getString("footerNote", "¡GRACIAS POR SU COMPRA!")) ?: "¡GRACIAS POR SU COMPRA!",
+            autoPrintReceipt = userPrefs.getBoolean("autoPrintReceipt", defaultPrefs.getBoolean("autoPrintReceipt", false)),
+            paperSize = userPrefs.getString("paperSize", defaultPrefs.getString("paperSize", "58mm")) ?: "58mm",
+            printerName = userPrefs.getString("printerName", defaultPrefs.getString("printerName", "Impresora Térmica Bluetooth")) ?: "Impresora Térmica Bluetooth",
             isFirstLaunch = isFirst,
-            businessSector = prefs.getString("businessSector", "General") ?: "General"
+            businessSector = userPrefs.getString("businessSector", defaultPrefs.getString("businessSector", "General")) ?: "General"
         )
     }
 
     override fun saveSettings(newSettings: BusinessSettings) {
-        val prefs = getPrefsForUser(currentEmail)
-        prefs.edit()
-            .putString("businessName", newSettings.businessName)
-            .putString("address", newSettings.address)
-            .putString("taxId", newSettings.taxId)
-            .putString("phone", newSettings.phone)
-            .putString("footerNote", newSettings.footerNote)
-            .putBoolean("autoPrintReceipt", newSettings.autoPrintReceipt)
-            .putString("paperSize", newSettings.paperSize)
-            .putString("printerName", newSettings.printerName)
-            .putBoolean("isFirstLaunch", newSettings.isFirstLaunch)
-            .putString("businessSector", newSettings.businessSector)
-            .apply()
+        val activeEmail = currentEmail ?: getFirebaseUserEmail()
+        val userPrefs = getPrefsForUser(activeEmail)
+        val defaultPrefs = getPrefsForUser(null)
+
+        val writeToPrefs = { prefs: SharedPreferences ->
+            prefs.edit()
+                .putString("businessName", newSettings.businessName)
+                .putString("address", newSettings.address)
+                .putString("taxId", newSettings.taxId)
+                .putString("phone", newSettings.phone)
+                .putString("footerNote", newSettings.footerNote)
+                .putBoolean("autoPrintReceipt", newSettings.autoPrintReceipt)
+                .putString("paperSize", newSettings.paperSize)
+                .putString("printerName", newSettings.printerName)
+                .putBoolean("isFirstLaunch", newSettings.isFirstLaunch)
+                .putString("businessSector", newSettings.businessSector)
+                .apply()
+        }
+
+        writeToPrefs(userPrefs)
+        writeToPrefs(defaultPrefs)
+
         _settings.value = newSettings
     }
 }

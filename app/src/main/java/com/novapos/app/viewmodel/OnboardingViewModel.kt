@@ -46,10 +46,13 @@ class OnboardingViewModel @Inject constructor(
             // Insertar datos de prueba según el sector
             insertSeedDataForSector(sector)
 
-            // Actualizar configuración
+            // Actualizar configuración preservando nombre del negocio
             val currentSettings = settingsRepository.settings.value
+            val validName = currentSettings.businessName.ifBlank { "Mi Negocio" }
+
             settingsRepository.saveSettings(
                 currentSettings.copy(
+                    businessName = validName,
                     isFirstLaunch = false,
                     businessSector = sector
                 )
