@@ -26,10 +26,13 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            val debugKs = file("debug.keystore")
+            if (debugKs.exists()) {
+                storeFile = debugKs
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
         }
         create("release") {
             if (keystorePropertiesFile.exists()) {
@@ -38,10 +41,13 @@ android {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
             } else {
-                storeFile = file("debug.keystore")
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
+                val debugKs = file("debug.keystore")
+                if (debugKs.exists()) {
+                    storeFile = debugKs
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                }
             }
         }
     }
@@ -50,8 +56,8 @@ android {
         applicationId = "com.novapos.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 19
-        versionName = "3.3.0"
+        versionCode = 20
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

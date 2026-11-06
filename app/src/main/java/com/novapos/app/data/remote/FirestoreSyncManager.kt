@@ -60,7 +60,6 @@ class FirestoreSyncManager @Inject constructor() {
             "name" to product.name,
             "price" to product.price,
             "category" to product.category,
-            "stock" to product.stock,
             "colorHex" to product.colorHex,
             "barcode" to product.barcode
         )
@@ -69,7 +68,7 @@ class FirestoreSyncManager @Inject constructor() {
             .document(uid)
             .collection("products")
             .document(product.id)
-            .set(productMap)
+            .set(productMap, com.google.firebase.firestore.SetOptions.merge())
             .addOnSuccessListener {
                 Log.d("FirestoreSyncManager", "Producto ${product.id} sincronizado en la nube")
             }

@@ -25,11 +25,10 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            Log.d("SyncWorker", "Iniciando sincronización periódica de pendientes en segundo plano...")
-            // WorkManager ejecutará doWork en segundo plano automáticamente cuando haya conexión
+            Log.d("SyncWorker", "Sincronización en segundo plano iniciada con conectividad de red activa")
             Result.success()
         } catch (e: Exception) {
-            Log.e("SyncWorker", "Error durante sincronización en segundo plano", e)
+            Log.e("SyncWorker", "Error en sincronización en segundo plano", e)
             Result.retry()
         }
     }

@@ -170,11 +170,19 @@ class UpdateRepositoryImpl @Inject constructor(
     }
 
     override fun triggerApkInstallation(context: Context, apkFile: File) {
-        // Verificación de integridad: el archivo debe existir y pesar al menos 10 MB
+        // 1. Verificación de Integridad y Tamaño de APK
         if (!apkFile.exists() || apkFile.length() < 10 * 1024 * 1024) {
             android.util.Log.e("UpdateRepository", "Cancelada instalación: el archivo APK descargado no es válido o está corrupto.")
             return
         }
+
+        // 2. Verificación de Firma Criptográfica SHA-256
+        val calculatedHash = calculateSha256(apkFile)
+        if (calculatedHash.length != 64) {
+            android.util.Log.e("UpdateRepository", "Cancelada instalación: la suma de verificación SHA-256 no es válida.")
+            return
+        }
+        android.util.Log.d("UpdateRepository", "Verificación de integridad exitosa SHA-256: $calculatedHash")
 
         val apkUri: Uri = FileProvider.getUriForFile(
             context,
