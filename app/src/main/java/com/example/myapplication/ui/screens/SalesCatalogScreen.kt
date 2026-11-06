@@ -35,7 +35,7 @@ fun SalesCatalogScreen(
     cartViewModel: CartViewModel = hiltViewModel()
 ) {
     val products by inventoryViewModel.products.collectAsState()
-    val cartItems by cartViewModel.cartItems.collectAsState()
+    val cartUiState by cartViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     val categories = listOf("Todos", "Bebidas", "Alimentos", "Postres", "Panadería")
@@ -56,13 +56,13 @@ fun SalesCatalogScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (cartItems.isNotEmpty()) {
+            if (cartUiState.items.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { showCartSheet = true },
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito") },
                     text = {
                         Text(
-                            text = "${cartItems.sumOf { it.quantity }} items • \$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}",
+                            text = "${cartUiState.items.sumOf { it.quantity }} items • \$${String.format(Locale.getDefault(), "%.2f", cartUiState.total)}",
                             fontWeight = FontWeight.Bold
                         )
                     },

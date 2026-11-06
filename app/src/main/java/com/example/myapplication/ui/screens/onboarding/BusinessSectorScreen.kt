@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +20,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.components.AppleButton
+import com.example.myapplication.ui.theme.AppleBlue
+
+data class SectorItem(val name: String, val emoji: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,25 +34,36 @@ fun BusinessSectorScreen(
     var searchQuery by remember { mutableStateOf("") }
 
     val sectors = listOf(
-        "Restaurante", "Cafetería", "Abarrotes", "Electrónica",
-        "Tienda de ropa", "Farmacia", "Ferretería", "Tienda de alcohol",
-        "Veterinaria", "Panadería", "Librería", "Otro"
+        SectorItem("Restaurante", "🍽️"),
+        SectorItem("Cafetería", "☕"),
+        SectorItem("Abarrotes", "🛒"),
+        SectorItem("Tienda de objetos", "📦"),
+        SectorItem("Electrónica", "💻"),
+        SectorItem("Tienda de ropa", "👗"),
+        SectorItem("Farmacia", "💊"),
+        SectorItem("Ferretería", "🛠️"),
+        SectorItem("Tienda de alcohol", "🍷"),
+        SectorItem("Distribuidor", "🚚"),
+        SectorItem("Panadería", "🥖"),
+        SectorItem("Veterinaria", "🐶")
     )
 
     val filteredSectors = sectors.filter {
-        it.contains(searchQuery, ignoreCase = true)
+        it.name.contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
         bottomBar = {
-            Box(modifier = Modifier.padding(24.dp)) {
+            Box(modifier = Modifier.padding(24.dp).background(Color(0xFFF3F7FA))) {
                 AppleButton(
                     text = "Siguiente",
                     enabled = selectedSector.isNotEmpty(),
-                    onClick = onNext
+                    onClick = onNext,
+                    backgroundColor = if (selectedSector.isNotEmpty()) AppleBlue else Color.LightGray
                 )
             }
-        }
+        },
+        containerColor = Color(0xFFF3F7FA) // Fondo claro igual a Yimi
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -59,23 +72,18 @@ fun BusinessSectorScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-            Icon(
-                imageVector = Icons.Default.Store,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+            
             Text(
                 text = "Giro de negocio",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2C3E50)
             )
             Text(
                 text = "Con esto adaptaremos el sistema a tus necesidades.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.Gray,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
             )
@@ -84,12 +92,17 @@ fun BusinessSectorScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = { Text("Buscar otro") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                trailingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    unfocusedBorderColor = Color.LightGray
+                )
             )
 
             LazyVerticalGrid(
@@ -99,9 +112,9 @@ fun BusinessSectorScreen(
             ) {
                 items(filteredSectors) { sector ->
                     SectorCard(
-                        title = sector,
-                        isSelected = selectedSector == sector,
-                        onClick = { onSectorSelected(sector) }
+                        item = sector,
+                        isSelected = selectedSector == sector.name,
+                        onClick = { onSectorSelected(sector.name) }
                     )
                 }
             }
@@ -111,37 +124,44 @@ fun BusinessSectorScreen(
 
 @Composable
 fun SectorCard(
-    title: String,
+    item: SectorItem,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1.2f)
+            .aspectRatio(1.1f)
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) AppleBlue.copy(alpha = 0.15f) else Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 0.dp else 2.dp),
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 0.dp else 1.dp),
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, AppleBlue) else null
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = title,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
-            )
-            // Radio button (indicador)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = item.emoji,
+                    fontSize = 48.sp, // Emoji grande simulando render 3D
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                Text(
+                    text = item.name,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) AppleBlue else Color(0xFF2C3E50),
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+            
+            // Radio button (indicador circular en la esquina)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -150,7 +170,8 @@ fun SectorCard(
                 RadioButton(
                     selected = isSelected,
                     onClick = onClick,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp),
+                    colors = RadioButtonDefaults.colors(selectedColor = AppleBlue)
                 )
             }
         }

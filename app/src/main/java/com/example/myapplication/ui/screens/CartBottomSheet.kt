@@ -38,11 +38,7 @@ fun CartBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
-    val cartItems by cartViewModel.cartItems.collectAsState()
-    val selectedTipPercent by cartViewModel.tipPercent.collectAsState()
-    val selectedDiscountPercent by cartViewModel.discountPercent.collectAsState()
-    val selectedServiceType by cartViewModel.selectedServiceType.collectAsState()
-    val selectedCartCustomer by cartViewModel.selectedCartCustomer.collectAsState()
+    val uiState by cartViewModel.uiState.collectAsState()
     val customers by cartViewModel.customers.collectAsState()
 
     var showCheckout by remember { mutableStateOf(false) }
@@ -97,7 +93,7 @@ fun CartBottomSheet(
                     )
                     serviceTypes.forEach { (type, label) ->
                         FilterChip(
-                            selected = selectedServiceType == type,
+                            selected = uiState.selectedServiceType == type,
                             onClick = { cartViewModel.setServiceType(type) },
                             label = { Text(label) },
                             modifier = Modifier.weight(1f)
@@ -113,14 +109,14 @@ fun CartBottomSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        imageVector = if (selectedCartCustomer == null) Icons.Default.PersonAdd else Icons.Default.Person,
+                        imageVector = if (uiState.selectedCustomer == null) Icons.Default.PersonAdd else Icons.Default.Person,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = selectedCartCustomer?.let { "Cliente: ${it.name}" } ?: "👤 + Asignar cliente al pedido",
-                        fontWeight = if (selectedCartCustomer != null) FontWeight.Bold else FontWeight.Normal
+                        text = uiState.selectedCustomer?.let { "Cliente: ${it.name}" } ?: "👤 + Asignar cliente al pedido",
+                        fontWeight = if (uiState.selectedCustomer != null) FontWeight.Bold else FontWeight.Normal
                     )
                 }
 
@@ -130,7 +126,7 @@ fun CartBottomSheet(
                     modifier = Modifier.weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(cartItems) { item ->
+                    items(uiState.items) { item ->
                         CartItemRow(
                             item = item,
                             onQuantityChange = { newQ -> cartViewModel.updateCartItemQuantity(item.product.id, newQ) }
@@ -145,7 +141,7 @@ fun CartBottomSheet(
                     val discounts = listOf(0.0 to "Sin Desc.", 5.0 to "5%", 10.0 to "10%", 15.0 to "15%")
                     items(discounts) { (percent, label) ->
                         FilterChip(
-                            selected = selectedDiscountPercent == percent,
+                            selected = uiState.discountPercent == percent,
                             onClick = { cartViewModel.setDiscountPercent(percent) },
                             label = { Text(label) }
                         )
@@ -157,7 +153,7 @@ fun CartBottomSheet(
                     val tips = listOf(0.0 to "Sin Propina", 10.0 to "10%", 15.0 to "15%", 20.0 to "20%")
                     items(tips) { (percent, label) ->
                         FilterChip(
-                            selected = selectedTipPercent == percent,
+                            selected = uiState.tipPercent == percent,
                             onClick = { cartViewModel.setTipPercent(percent) },
                             label = { Text(label) }
                         )
@@ -177,7 +173,7 @@ fun CartBottomSheet(
 
                 if (cartViewModel.cartDiscount > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Descuento (${selectedDiscountPercent.toInt()}%)", color = AppleGreen)
+                        Text("Descuento (${uiState.discountPercent.toInt()}%)", color = AppleGreen)
                         Text("-\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartDiscount)}", color = AppleGreen, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -189,7 +185,7 @@ fun CartBottomSheet(
 
                 if (cartViewModel.cartTip > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Propina (${selectedTipPercent.toInt()}%)", color = MaterialTheme.colorScheme.primary)
+                        Text("Propina (${uiState.tipPercent.toInt()}%)", color = MaterialTheme.colorScheme.primary)
                         Text("+\$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTip)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -205,7 +201,7 @@ fun CartBottomSheet(
 
                 AppleButton(
                     text = "Cobrar \$${String.format(Locale.getDefault(), "%.2f", cartViewModel.cartTotal)}",
-                    enabled = cartItems.isNotEmpty(),
+                    enabled = uiState.items.isNotEmpty(),
                     onClick = { showCheckout = true }
                 )
 
@@ -305,11 +301,11 @@ fun CheckoutView(
     onBack: () -> Unit,
     onComplete: (Order) -> Unit
 ) {
+    val uiState by cartViewModel.uiState.collectAsState()
     val customers by cartViewModel.customers.collectAsState()
-    val selectedCartCustomer by cartViewModel.selectedCartCustomer.collectAsState()
 
     var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
-    var selectedCustomer by remember { mutableStateOf<Customer?>(selectedCartCustomer) }
+    var selectedCustomer by remember { mutableStateOf<Customer?>(uiState.selectedCustomer) }
     var expandedCustomerDropdown by remember { mutableStateOf(false) }
 
     var isDone by remember { mutableStateOf(false) }
@@ -349,11 +345,11 @@ fun CheckoutView(
                     onClick = {
                         selectedMethod = method
                         if (method != PaymentMethod.CREDIT) {
-                            if (selectedCartCustomer != null) {
-                                selectedCustomer = selectedCartCustomer
+                            if (uiState.selectedCustomer != null) {
+                                selectedCustomer = uiState.selectedCustomer
                             }
                         } else if (customers.isNotEmpty() && selectedCustomer == null) {
-                            selectedCustomer = selectedCartCustomer ?: customers.first()
+                            selectedCustomer = uiState.selectedCustomer ?: customers.first()
                         }
                     },
                     modifier = Modifier

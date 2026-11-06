@@ -109,4 +109,47 @@ interface PosDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
+
+    // ==== TRANSACCIONES ATÓMICAS ====
+
+    @Transaction
+    suspend fun processSaleAtomic(
+        order: OrderEntity,
+        orderItems: List<OrderItemEntity>,
+        stockDeductions: Map<String, Int>, // Product ID to deduction quantity
+        shiftUpdate: CashShiftEntity?,
+        customerUpdate: CustomerEntity?,
+        tableIdToClear: String?
+    ) {
+        // 1. Guardar Orden
+        insertOrder(order)
+        insertOrderItems(orderItems)
+
+        // 2. Deducir Stock
+        for ((productId, qtyToDeduct) in stockDeductions) {
+            val product = getProductById(productId)
+            if (product != null) {
+                updateProduct(product.copy(stock = product.stock - qtyToDeduct))
+            }
+        }
+
+        // 3. Actualizar Turno de Caja (si hay uno activo)
+        if (shiftUpdate != null) {
+            updateShift(shiftUpdate)
+        }
+
+        // 4. Actualizar Deuda del Cliente (si es fiado)
+        if (customerUpdate != null) {
+            updateCustomer(customerUpdate)
+        }
+
+        // 5. Limpiar Mesa (si venía de una mesa)
+        if (tableIdToClear != null) {
+            clearTableItems(tableIdToClear)
+            // No podemos cambiar el status a AVAILABLE desde aquí fácilmente sin el TableEntity,
+            // pero el repo lo puede manejar, o podemos simplemente limpiarla.
+            // Para mantener atomicidad, limpiamos los items:
+            clearTableItems(tableIdToClear)
+        }
+    }
 }

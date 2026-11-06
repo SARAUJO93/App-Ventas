@@ -9,64 +9,61 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class CartUiState(
+    val items: List<CartItem> = emptyList(),
+    val selectedServiceType: ServiceType = ServiceType.DINE_IN,
+    val selectedCustomer: Customer? = null,
+    val tipPercent: Double = 0.0,
+    val discountPercent: Double = 0.0,
+    val activeTableId: String? = null
+) {
+    val subtotal: Double get() = items.sumOf { it.total }
+    val discount: Double get() = subtotal * (discountPercent / 100.0)
+    val taxableAmount: Double get() = (subtotal - discount).coerceAtLeast(0.0)
+    val tax: Double get() = taxableAmount * 0.16
+    val tip: Double get() = taxableAmount * (tipPercent / 100.0)
+    val total: Double get() = taxableAmount + tax + tip
+}
+
 @HiltViewModel
 class CartViewModel @Inject constructor(
     private val repository: PosRepository
 ) : ViewModel() {
 
-    private val _selectedServiceType = MutableStateFlow(ServiceType.DINE_IN)
-    val selectedServiceType: StateFlow<ServiceType> = _selectedServiceType.asStateFlow()
+    private val _uiState = MutableStateFlow(CartUiState())
+    val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
 
-    private val _selectedCartCustomer = MutableStateFlow<Customer?>(null)
-    val selectedCartCustomer: StateFlow<Customer?> = _selectedCartCustomer.asStateFlow()
-
-    private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
-    val cartItems = _cartItems.asStateFlow()
-
-    private val _tipPercent = MutableStateFlow(0.0)
-    val tipPercent = _tipPercent.asStateFlow()
-
-    private val _discountPercent = MutableStateFlow(0.0)
-    val discountPercent = _discountPercent.asStateFlow()
-
-    // Requerimos customers para el processCheckout
+    // Mantenemos la lista de clientes general separada ya que no es exclusiva del "estado" del carrito
     val customers: StateFlow<List<Customer>> = repository.getCustomers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private var activeCheckoutTableId: String? = null
+    // Backward compatibility getters for easy migration, though uiState is preferred
+    val cartItems: StateFlow<List<CartItem>> = _uiState.map { it.items }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+    val tipPercent: StateFlow<Double> = _uiState.map { it.tipPercent }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    val discountPercent: StateFlow<Double> = _uiState.map { it.discountPercent }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
+    val selectedServiceType: StateFlow<ServiceType> = _uiState.map { it.selectedServiceType }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), ServiceType.DINE_IN)
+    val selectedCartCustomer: StateFlow<Customer?> = _uiState.map { it.selectedCustomer }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
-    val cartSubtotal: Double
-        get() = _cartItems.value.sumOf { it.total }
-
-    val cartDiscount: Double
-        get() = cartSubtotal * (_discountPercent.value / 100.0)
-
-    val cartTaxableAmount: Double
-        get() = (cartSubtotal - cartDiscount).coerceAtLeast(0.0)
-
-    val cartTax: Double
-        get() = cartTaxableAmount * 0.16
-
-    val cartTip: Double
-        get() = cartTaxableAmount * (_tipPercent.value / 100.0)
-
-    val cartTotal: Double
-        get() = cartTaxableAmount + cartTax + cartTip
+    val cartSubtotal: Double get() = _uiState.value.subtotal
+    val cartDiscount: Double get() = _uiState.value.discount
+    val cartTax: Double get() = _uiState.value.tax
+    val cartTip: Double get() = _uiState.value.tip
+    val cartTotal: Double get() = _uiState.value.total
 
     fun setServiceType(type: ServiceType) {
-        _selectedServiceType.value = type
+        _uiState.update { it.copy(selectedServiceType = type) }
     }
 
     fun setCartCustomer(customer: Customer?) {
-        _selectedCartCustomer.value = customer
+        _uiState.update { it.copy(selectedCustomer = customer) }
     }
-
+    
     fun setTipPercent(percent: Double) {
-        _tipPercent.value = percent
+        _uiState.update { it.copy(tipPercent = percent) }
     }
 
     fun setDiscountPercent(percent: Double) {
-        _discountPercent.value = percent
+        _uiState.update { it.copy(discountPercent = percent) }
     }
 
     fun scanAndAddToCart(
@@ -90,44 +87,41 @@ class CartViewModel @Inject constructor(
         selectedVariant: ProductVariant? = null,
         selectedModifiers: List<ProductModifier> = emptyList()
     ) {
-        _cartItems.update { current ->
-            val existingIndex = current.indexOfFirst {
+        _uiState.update { currentState ->
+            val existingIndex = currentState.items.indexOfFirst {
                 it.product.id == product.id &&
                         it.selectedVariant?.id == selectedVariant?.id &&
                         it.selectedModifiers == selectedModifiers
             }
-            if (existingIndex != -1) {
-                current.mapIndexed { index, item ->
+            val newItems = if (existingIndex != -1) {
+                currentState.items.mapIndexed { index, item ->
                     if (index == existingIndex) item.copy(quantity = item.quantity + 1) else item
                 }
             } else {
-                current + CartItem(
+                currentState.items + CartItem(
                     product = product,
                     quantity = 1,
                     selectedVariant = selectedVariant,
                     selectedModifiers = selectedModifiers
                 )
             }
+            currentState.copy(items = newItems)
         }
     }
 
     fun updateCartItemQuantity(productId: String, newQuantity: Int) {
-        if (newQuantity <= 0) {
-            _cartItems.update { current -> current.filter { it.product.id != productId } }
-        } else {
-            _cartItems.update { current ->
-                current.map { if (it.product.id == productId) it.copy(quantity = newQuantity) else it }
+        _uiState.update { currentState ->
+            val newItems = if (newQuantity <= 0) {
+                currentState.items.filter { it.product.id != productId }
+            } else {
+                currentState.items.map { if (it.product.id == productId) it.copy(quantity = newQuantity) else it }
             }
+            currentState.copy(items = newItems)
         }
     }
 
     fun clearCart() {
-        _cartItems.value = emptyList()
-        _tipPercent.value = 0.0
-        _discountPercent.value = 0.0
-        _selectedServiceType.value = ServiceType.DINE_IN
-        _selectedCartCustomer.value = null
-        activeCheckoutTableId = null
+        _uiState.value = CartUiState()
     }
 
     fun transferTableOrderToCart(tableId: String, onTransferred: () -> Unit) {
@@ -147,44 +141,37 @@ class CartViewModel @Inject constructor(
                         quantity = item.quantity
                     )
                 }
-                _cartItems.value = converted
-                activeCheckoutTableId = tableId
+                _uiState.update { it.copy(items = converted, activeTableId = tableId) }
                 onTransferred()
             }
         }
     }
 
     fun processCheckout(method: PaymentMethod, customerId: String? = null): Order {
-        val currentItems = _cartItems.value.toList()
-        val tableIdToClear = activeCheckoutTableId
-        val totalToCharge = cartTotal
-        val customerObj = customers.value.find { it.id == customerId } ?: _selectedCartCustomer.value
+        val state = _uiState.value
+        val currentItems = state.items.toList()
+        val customerObj = customers.value.find { it.id == customerId } ?: state.selectedCustomer
 
         val newOrder = Order(
             id = System.currentTimeMillis().toString(),
             items = currentItems,
-            subtotal = cartSubtotal,
-            discount = cartDiscount,
-            tax = cartTax,
-            tip = cartTip,
-            total = totalToCharge,
+            subtotal = state.subtotal,
+            discount = state.discount,
+            tax = state.tax,
+            tip = state.tip,
+            total = state.total,
             status = OrderStatus.COMPLETED,
             paymentMethod = method,
             customerId = customerObj?.id,
             customerName = customerObj?.name,
-            serviceType = _selectedServiceType.value
+            serviceType = state.selectedServiceType
         )
+
         viewModelScope.launch {
-            repository.saveOrder(newOrder)
-            repository.deductStock(currentItems)
-            repository.recordSaleInActiveShift(totalToCharge, method)
-            if (method == PaymentMethod.CREDIT && customerObj != null) {
-                repository.addCustomerDebt(customerObj.id, totalToCharge)
-            }
-            if (tableIdToClear != null) {
-                repository.clearTableOrder(tableIdToClear)
-            }
+            // Delegamos la complejidad a la función atómica del repositorio
+            repository.processCheckoutAtomic(newOrder, state.activeTableId)
         }
+        
         clearCart()
         return newOrder
     }

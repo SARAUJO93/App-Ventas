@@ -33,7 +33,8 @@ interface PosRepository {
     suspend fun deleteCustomer(customerId: String)
     suspend fun addCustomerDebt(customerId: String, amount: Double)
     suspend fun recordCustomerPayment(customerId: String, paymentAmount: Double)
-    suspend fun saveOrder(order: Order)
+    suspend fun saveOrder(order: Order) // Lo mantenemos por si se usa en otro lado, pero desaconsejado para checkout
+    suspend fun processCheckoutAtomic(order: Order, tableIdToClear: String?): Order
     suspend fun openShift(cashierName: String, initialCash: Double)
     suspend fun closeShift(shiftId: String, actualCash: Double)
     suspend fun recordSaleInActiveShift(amount: Double, paymentMethod: PaymentMethod)
@@ -213,6 +214,88 @@ class PosRepositoryImpl @Inject constructor(
             )
         }
         dao.insertOrderItems(itemEntities)
+    }
+
+    override suspend fun processCheckoutAtomic(order: Order, tableIdToClear: String?): Order {
+        val orderEntity = OrderEntity(
+            id = order.id,
+            subtotal = order.subtotal,
+            discount = order.discount,
+            tax = order.tax,
+            tip = order.tip,
+            total = order.total,
+            status = order.status.name,
+            dateTimestamp = order.date.time,
+            paymentMethod = order.paymentMethod?.name,
+            customerId = order.customerId,
+            customerName = order.customerName,
+            serviceType = order.serviceType.name
+        )
+
+        val itemEntities = order.items.map { item ->
+            OrderItemEntity(
+                id = UUID.randomUUID().toString(),
+                orderId = order.id,
+                productId = item.product.id,
+                productName = item.product.name,
+                unitPrice = item.product.price,
+                quantity = item.quantity,
+                colorHex = item.product.colorHex
+            )
+        }
+
+        // 1. Preparar Deduciones de Stock
+        val stockDeductions = mutableMapOf<String, Int>()
+        for (item in order.items) {
+            stockDeductions[item.product.id] = (stockDeductions[item.product.id] ?: 0) + item.quantity
+        }
+
+        // 2. Preparar Actualización de Turno Activo
+        var shiftUpdate: CashShiftEntity? = null
+        val activeShift = dao.getActiveShift().first()
+        if (activeShift != null && order.paymentMethod != null) {
+            val amount = order.total
+            shiftUpdate = when (order.paymentMethod) {
+                PaymentMethod.CASH -> activeShift.copy(
+                    cashSales = activeShift.cashSales + amount,
+                    expectedCash = activeShift.expectedCash + amount
+                )
+                PaymentMethod.CARD -> activeShift.copy(cardSales = activeShift.cardSales + amount)
+                PaymentMethod.TRANSFER -> activeShift.copy(transferSales = activeShift.transferSales + amount)
+                PaymentMethod.CREDIT -> activeShift.copy(creditSales = activeShift.creditSales + amount)
+            }
+        }
+
+        // 3. Preparar Actualización de Fiado/Deuda (Si aplica)
+        var customerUpdate: CustomerEntity? = null
+        if (order.paymentMethod == PaymentMethod.CREDIT && order.customerId != null) {
+            val customer = dao.getCustomerById(order.customerId)
+            if (customer != null) {
+                customerUpdate = customer.copy(debtBalance = customer.debtBalance + order.total)
+            }
+        }
+
+        // 4. Enviar todo al Transaction Atómico de Room
+        dao.processSaleAtomic(
+            order = orderEntity,
+            orderItems = itemEntities,
+            stockDeductions = stockDeductions,
+            shiftUpdate = shiftUpdate,
+            customerUpdate = customerUpdate,
+            tableIdToClear = tableIdToClear
+        )
+
+        // Si venía de mesa, actualizamos el status de la mesa a AVAILABLE
+        // ya que el Transaction del Dao solo limpió los items por simplicidad.
+        if (tableIdToClear != null) {
+            val tables = dao.getAllTables().first()
+            val currentTable = tables.find { it.id == tableIdToClear }
+            if (currentTable != null) {
+                dao.updateTable(currentTable.copy(currentOrderTotal = 0.0, status = TableStatus.AVAILABLE.name))
+            }
+        }
+
+        return order
     }
 
     override suspend fun addProduct(product: Product) {

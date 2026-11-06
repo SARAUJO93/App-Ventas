@@ -16,9 +16,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.screens.PosHomeScreen
+import com.example.myapplication.ui.screens.auth.BusinessNameScreen
+import com.example.myapplication.ui.screens.auth.EmailAuthScreen
+import com.example.myapplication.ui.screens.auth.WelcomeScreen
 import com.example.myapplication.ui.screens.onboarding.BusinessSectorScreen
 import com.example.myapplication.ui.screens.onboarding.ChallengesScreen
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.viewmodel.AuthViewModel
 import com.example.myapplication.viewmodel.OnboardingViewModel
 import com.example.myapplication.viewmodel.SettingsAndUpdateViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -44,15 +48,48 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun RootNavigationGraph(
     settingsViewModel: SettingsAndUpdateViewModel = hiltViewModel(),
-    onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    onboardingViewModel: OnboardingViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val settings by settingsViewModel.businessSettings.collectAsState()
+    val currentUserEmail by authViewModel.currentUserEmail.collectAsState()
 
-    // Determinamos el startDestination basado en si es el primer inicio
-    val startDest = if (settings.isFirstLaunch) "onboarding_sector" else "main_app"
+    // Determinamos el startDestination basado en el estado
+    val startDest = when {
+        currentUserEmail == null -> "welcome"
+        settings.isFirstLaunch -> "business_name"
+        else -> "main_app"
+    }
 
     NavHost(navController = navController, startDestination = startDest) {
+        
+        composable("welcome") {
+            WelcomeScreen(
+                onContinueWithGoogle = { authViewModel.loginWithGoogle() },
+                onContinueWithEmail = { navController.navigate("email_auth") }
+            )
+        }
+
+        composable("email_auth") {
+            EmailAuthScreen(
+                authViewModel = authViewModel,
+                onBack = { navController.popBackStack() },
+                onSuccess = {
+                    navController.navigate("business_name") {
+                        popUpTo("welcome") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable("business_name") {
+            BusinessNameScreen(
+                settingsViewModel = settingsViewModel,
+                onNext = { navController.navigate("onboarding_sector") }
+            )
+        }
+
         composable("onboarding_sector") {
             val selectedSector by onboardingViewModel.selectedSector.collectAsState()
             BusinessSectorScreen(
@@ -61,7 +98,7 @@ fun RootNavigationGraph(
                 onNext = { navController.navigate("onboarding_challenges") }
             )
         }
-
+        
         composable("onboarding_challenges") {
             val selectedChallenges by onboardingViewModel.selectedChallenges.collectAsState()
             ChallengesScreen(
@@ -70,13 +107,14 @@ fun RootNavigationGraph(
                 onComplete = {
                     onboardingViewModel.completeOnboarding {
                         navController.navigate("main_app") {
-                            popUpTo("onboarding_sector") { inclusive = true }
+                            popUpTo("business_name") { inclusive = true }
+                            popUpTo("welcome") { inclusive = true }
                         }
                     }
                 }
             )
         }
-
+        
         composable("main_app") {
             PosHomeScreen()
         }
