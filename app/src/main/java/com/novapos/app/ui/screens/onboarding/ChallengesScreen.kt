@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,13 +33,18 @@ fun ChallengesScreen(
         "Entregar tickets"
     )
 
+    var isSubmitting by remember { mutableStateOf(false) }
+
     Scaffold(
         bottomBar = {
             Box(modifier = Modifier.padding(24.dp)) {
                 AppleButton(
-                    text = "Siguiente",
-                    enabled = selectedChallenges.isNotEmpty(),
-                    onClick = onComplete
+                    text = if (isSubmitting) "Comenzando..." else "Siguiente",
+                    enabled = selectedChallenges.isNotEmpty() && !isSubmitting,
+                    onClick = {
+                        isSubmitting = true
+                        onComplete()
+                    }
                 )
             }
         }

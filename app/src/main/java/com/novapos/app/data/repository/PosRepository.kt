@@ -2,9 +2,12 @@ package com.novapos.app.data.repository
 
 import com.novapos.app.data.local.*
 import com.novapos.app.model.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -317,12 +320,16 @@ class PosRepositoryImpl @Inject constructor(
 
     override suspend fun addProduct(product: Product) {
         dao.insertProduct(product.toEntity())
-        try { syncManager.syncProductToCloud(product) } catch (e: Exception) { e.printStackTrace() }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try { syncManager.syncProductToCloud(product) } catch (e: Exception) { android.util.Log.e("PosRepository", "Error syncing product", e) }
+        }
     }
 
     override suspend fun updateProduct(product: Product) {
         dao.updateProduct(product.toEntity())
-        try { syncManager.syncProductToCloud(product) } catch (e: Exception) { e.printStackTrace() }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try { syncManager.syncProductToCloud(product) } catch (e: Exception) { android.util.Log.e("PosRepository", "Error syncing product", e) }
+        }
     }
 
     override suspend fun deleteProduct(productId: String) {
