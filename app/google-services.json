@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:636959307320:android:40a85d60830f3df4ee18cd",
+        "mobilesdk_app_id": "1:636959307320:android:d6a048166963ad0fee18cd",
         "android_client_info": {
-          "package_name": "com.example.myapplication"
+          "package_name": "com.novapos.app"
         }
       },
       "oauth_client": [
@@ -17,39 +17,10 @@
           "client_id": "636959307320-lvee0g0e3tsg05fpoh4fdqs087pq7ofn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.myapplication",
+            "package_name": "com.novapos.app",
             "certificate_hash": "1e057d816def245d21861d47437101b699b0862a"
           }
         },
-        {
-          "client_id": "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBqvk_l4wBIKxewEVS3KFeJSFJCOnF2nFw"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:636959307320:android:d6a048166963ad0fee18cd",
-        "android_client_info": {
-          "package_name": "com.novapos.app"
-        }
-      },
-      "oauth_client": [
         {
           "client_id": "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com",
           "client_type": 3
