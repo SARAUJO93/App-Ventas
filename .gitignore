@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Key & Security files
+*.keystore
+*.jks
+keystore.properties
+upload*.ps1
+temp_upload*.ps1
+
