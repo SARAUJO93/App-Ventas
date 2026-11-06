@@ -8,8 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +41,8 @@ fun WelcomeScreen(
 
     val webClientId = "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
 
+    var showDeveloperErrorDialog by remember { mutableStateOf(false) }
+
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -55,7 +56,9 @@ fun WelcomeScreen(
                 Toast.makeText(context, "No se pudo obtener el token de Google", Toast.LENGTH_SHORT).show()
             }
         } catch (e: ApiException) {
-            if (e.statusCode != 12501) { // 12501 = Cancelado por el usuario
+            if (e.statusCode == 10) {
+                showDeveloperErrorDialog = true
+            } else if (e.statusCode != 12501) {
                 Toast.makeText(context, "Error Google Sign-In (${e.statusCode}): ${e.localizedMessage ?: "Credenciales no válidas"}", Toast.LENGTH_LONG).show()
             }
         }
@@ -196,6 +199,24 @@ fun WelcomeScreen(
             color = Color.Gray,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+
+    if (showDeveloperErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeveloperErrorDialog = false },
+            title = { Text("Configuración de Google Auth requerida") },
+            text = {
+                Text(
+                    "Google ha rechazado la solicitud (Error 10) porque el paquete 'com.novapos.app' debe agregarse a tu consola de Firebase con tu huella SHA-1.\n\n" +
+                    "Puedes usar 'Continuar con Email' que funciona 100% de inmediato sin este requisito."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDeveloperErrorDialog = false }) {
+                    Text("Entendido")
+                }
+            }
         )
     }
 }
