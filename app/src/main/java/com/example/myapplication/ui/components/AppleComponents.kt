@@ -51,12 +51,16 @@ fun AppleButton(
             .fillMaxWidth()
             .height(50.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor)
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor,
+            contentColor = textColor,
+            disabledContainerColor = Color(0xFFE2E8F0),
+            disabledContentColor = Color(0xFFA0AEC0)
+        )
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-            color = textColor
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
         )
     }
 }

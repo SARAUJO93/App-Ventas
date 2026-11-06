@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.myapplication.ui.components.AppleButton
+import com.example.myapplication.ui.theme.AppleBlue
 import com.example.myapplication.viewmodel.AuthState
 import com.example.myapplication.viewmodel.AuthViewModel
 
@@ -46,7 +47,11 @@ fun EmailAuthScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Regresar",
+                            tint = Color(0xFF2C3E50)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF3F7FA))
@@ -72,7 +77,7 @@ fun EmailAuthScreen(
             Text(
                 text = "Si no tienes cuenta, crearemos una para ti automáticamente.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = Color(0xFF718096),
                 modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
             )
 
@@ -85,8 +90,14 @@ fun EmailAuthScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
+                    focusedTextColor = Color(0xFF2C3E50),
+                    unfocusedTextColor = Color(0xFF2C3E50),
+                    focusedLabelColor = AppleBlue,
+                    unfocusedLabelColor = Color(0xFF718096),
+                    focusedBorderColor = AppleBlue,
+                    unfocusedBorderColor = Color(0xFFCBD5E0)
                 )
             )
 
@@ -102,8 +113,14 @@ fun EmailAuthScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
+                    focusedTextColor = Color(0xFF2C3E50),
+                    unfocusedTextColor = Color(0xFF2C3E50),
+                    focusedLabelColor = AppleBlue,
+                    unfocusedLabelColor = Color(0xFF718096),
+                    focusedBorderColor = AppleBlue,
+                    unfocusedBorderColor = Color(0xFFCBD5E0)
                 )
             )
 

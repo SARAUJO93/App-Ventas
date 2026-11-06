@@ -81,10 +81,14 @@ fun BusinessNameScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White,
                     focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedTextColor = Color(0xFF2C3E50),
+                    unfocusedTextColor = Color(0xFF2C3E50),
+                    focusedLabelColor = AppleBlue,
+                    unfocusedLabelColor = Color(0xFF718096),
                     focusedBorderColor = AppleBlue,
-                    focusedLabelColor = AppleBlue
+                    unfocusedBorderColor = Color(0xFFCBD5E0)
                 )
             )
         }

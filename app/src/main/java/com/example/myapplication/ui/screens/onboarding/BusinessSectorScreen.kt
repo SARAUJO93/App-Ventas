@@ -91,17 +91,22 @@ fun BusinessSectorScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Buscar otro") },
-                trailingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                placeholder = { Text("Buscar otro", color = Color(0xFF718096)) },
+                trailingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = Color(0xFF2C3E50)) },
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White,
                     focusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color.LightGray
+                    unfocusedContainerColor = Color.White,
+                    focusedTextColor = Color(0xFF2C3E50),
+                    unfocusedTextColor = Color(0xFF2C3E50),
+                    focusedLabelColor = AppleBlue,
+                    unfocusedLabelColor = Color(0xFF718096),
+                    focusedBorderColor = AppleBlue,
+                    unfocusedBorderColor = Color(0xFFCBD5E0)
                 )
             )
 
