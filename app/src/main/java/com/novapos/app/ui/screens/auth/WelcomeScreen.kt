@@ -40,14 +40,7 @@ fun WelcomeScreen(
     val credentialManager = CredentialManager.create(context)
     val authState by authViewModel.authState.collectAsState()
 
-    val webClientId = remember(context) {
-        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
-        if (resId != 0) {
-            context.getString(resId)
-        } else {
-            "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
-        }
-    }
+    val webClientId = "636959307320-fefbnija8d8qmc9ak1qg151pe501qsc0.apps.googleusercontent.com"
 
     var showDeveloperErrorDialog by remember { mutableStateOf(false) }
 
