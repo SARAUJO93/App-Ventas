@@ -49,6 +49,7 @@ fun WelcomeScreen(
             is com.novapos.app.viewmodel.AuthState.Error -> {
                 val msg = (authState as com.novapos.app.viewmodel.AuthState.Error).message
                 Toast.makeText(context, "Error de inicio de sesión: $msg", Toast.LENGTH_LONG).show()
+                authViewModel.resetState()
             }
             else -> {}
         }
@@ -216,11 +217,13 @@ fun WelcomeScreen(
     if (showDeveloperErrorDialog) {
         AlertDialog(
             onDismissRequest = { showDeveloperErrorDialog = false },
-            title = { Text("Configuración de Google Auth requerida") },
+            title = { Text("Faltan 2 pasos en Firebase") },
             text = {
                 Text(
-                    "Google ha rechazado la solicitud (Error 10) porque el paquete 'com.novapos.app' debe agregarse a tu consola de Firebase con tu huella SHA-1.\n\n" +
-                    "Puedes usar 'Continuar con Email' que funciona 100% de inmediato sin este requisito."
+                    "El Error 10 ocurre porque la configuración en la nube de Google está incompleta. Para solucionarlo:\n\n" +
+                    "1. Agrega también la huella SHA-256 en Firebase (junto al SHA-1).\n" +
+                    "2. En Firebase > Autenticación > Sign-in method, asegúrate de que 'Google' esté Habilitado y tenga un 'Correo electrónico de asistencia' asignado.\n\n" +
+                    "O simplemente usa 'Continuar con Email' (Funciona al 100%)."
                 )
             },
             confirmButton = {
